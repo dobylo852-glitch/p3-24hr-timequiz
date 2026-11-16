@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>永光小伙子大冒險：時間冒險島</title>
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 載入 Google Fonts 繁體中文圓體與英數圓體 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <style>
+    /* 全域字體與基礎遊戲風格設定 */
+    body {
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+      background: linear-gradient(180deg, #38bdf8 0%, #7dd3fc 45%, #bae6fd 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 遊戲立體果凍按鈕效果 */
+    .btn-game {
+      transition: all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 5px 0 rgba(0, 0, 0, 0.22);
+    }
+    .btn-game:active:not(:disabled) {
+      transform: translateY(4px);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.22);
+    }
+    .btn-game:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* 角色懸浮與受擊動畫 */
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    .animate-float {
+      animation: floatSlow 2.6s ease-in-out infinite;
+    }
+
+    @keyframes monsterIdle {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-6px) scale(1.03); }
+    }
+    .animate-monster {
+      animation: monsterIdle 2.2s ease-in-out infinite;
+    }
+
+    @keyframes heroAttack {
+      0% { transform: translateX(0) scale(1); }
+      40% { transform: translateX(90px) scale(1.18) rotate(8deg); }
+      70% { transform: translateX(70px) scale(1.1); }
+      100% { transform: translateX(0) scale(1); }
+    }
+    .anim-hero-attack {
+      animation: heroAttack 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes monsterAttack {
+      0% { transform: translateX(0) scale(1); }
+      40% { transform: translateX(-90px) scale(1.18) rotate(-8deg); }
+      70% { transform: translateX(-70px) scale(1.1); }
+      100% { transform: translateX(0) scale(1); }
+    }
+    .anim-monster-attack {
+      animation: monsterAttack 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes shakeHit {
+      0%, 100% { transform: translateX(0); filter: brightness(1); }
+      20% { transform: translateX(-10px); filter: brightness(1.8) sepia(1) hue-rotate(-50deg) saturate(5); }
+      40% { transform: translateX(10px); }
+      60% { transform: translateX(-8px); }
+      80% { transform: translateX(8px); }
+    }
+    .anim-hit {
+      animation: shakeHit 0.42s ease-in-out;
+    }
+
+    @keyframes floatDamage {
+      0% { opacity: 1; transform: translateY(0) scale(0.7); }
+      30% { opacity: 1; transform: translateY(-22px) scale(1.25); }
+      100% { opacity: 0; transform: translateY(-55px) scale(1); }
+    }
+    .damage-popup {
+      animation: floatDamage 0.95s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes popReward {
+      0% { transform: scale(0.5) rotate(-6deg); opacity: 0; }
+      70% { transform: scale(1.06) rotate(2deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .anim-reward-pop {
+      animation: popReward 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* 雲朵背景漂浮 */
+    @keyframes cloudDrift {
+      0% { transform: translateX(-120px); }
+      100% { transform: translateX(110vw); }
+    }
+    .cloud-bg {
+      animation: cloudDrift linear infinite;
+    }
+
+    /* 自訂捲軸美化 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(14, 165, 233, 0.5);
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body class="text-slate-800 relative">
+
+  <!-- 背景裝飾雲朵 -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="cloud-bg absolute top-8 text-white/60 text-6xl" style="animation-duration: 38s;">☁️</div>
+    <div class="cloud-bg absolute top-28 text-white/45 text-5xl" style="animation-duration: 52s; animation-delay: -18s;">☁️</div>
+    <div class="cloud-bg absolute top-52 text-white/35 text-7xl" style="animation-duration: 45s; animation-delay: -29s;">☁️</div>
+    <!-- 底部海浪裝飾 -->
+    <div class="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-sky-500/40 to-transparent"></div>
+  </div>
+
+  <!-- 主應用程式容器 -->
+  <div id="app" class="relative z-10 max-w-4xl mx-auto min-h-screen flex flex-col px-3 py-3 sm:px-6 sm:py-5">
+
+    <!-- 頂部導覽列 (HUD) -->
+    <header id="top-hud" class="hidden bg-white/90 backdrop-blur-md rounded-2xl px-4 py-2.5 shadow-lg border-2 border-sky-200 mb-4 flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div id="hud-avatar-box" class="w-12 h-12 rounded-xl bg-gradient-to-b from-sky-50 to-amber-100 border-2 border-amber-400 flex items-center justify-center p-0.5 shadow-inner overflow-hidden shrink-0">
+          <!-- 由 renderCharacterSVG 動態渲染穿戴裝備的小伙子 -->
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span id="hud-player-name" class="font-black text-slate-800 text-base sm:text-lg">小勇士</span>
+            <span id="hud-level-badge" class="text-[11px] bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full font-black shadow-sm">
+              Lv.1 火焰見習生
+            </span>
+            <button onclick="openNameModal()" title="修改玩家姓名" class="text-xs bg-sky-100 hover:bg-sky-200 text-sky-700 px-2 py-0.5 rounded-full font-bold transition">
+              ✏️ 改名
+            </button>
+          </div>
+          <div class="text-xs text-slate-500 font-bold mt-0.5">
+            已通關：<span id="hud-cleared-count" class="text-emerald-600">0</span> / 5 島嶼 • 裝備：<span id="hud-gear-count" class="text-amber-600">0</span>/5
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- 總積分徽章 -->
+        <div class="bg-amber-50 border-2 border-amber-300 rounded-xl px-3 py-1 flex items-center gap-1.5">
+          <span class="text-lg">⭐</span>
+          <div>
+            <div class="text-[10px] text-amber-700 font-bold leading-none">總積分</div>
+            <div id="hud-score" class="font-black text-amber-600 text-sm sm:text-base leading-tight">0</div>
+          </div>
+        </div>
+
+        <!-- 最高連擊徽章 -->
+        <div class="hidden sm:flex bg-rose-50 border-2 border-rose-300 rounded-xl px-3 py-1 items-center gap-1.5">
+          <span class="text-lg">🔥</span>
+          <div>
+            <div class="text-[10px] text-rose-700 font-bold leading-none">最高連擊</div>
+            <div id="hud-max-combo" class="font-black text-rose-600 text-sm sm:text-base leading-tight">0</div>
+          </div>
+        </div>
+
+        <!-- 龍虎榜按鈕 -->
+        <button onclick="openLeaderboard()" class="btn-game bg-gradient-to-b from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white font-black px-3 py-2 rounded-xl text-xs sm:text-sm flex items-center gap-1 border border-orange-600">
+          <span>🏆</span>
+          <span>龍虎榜</span>
+        </button>
+
+        <!-- 音效開關 -->
+        <button id="sound-toggle-btn" onclick="toggleSound()" class="btn-game bg-sky-100 hover:bg-sky-200 text-sky-700 font-bold p-2 rounded-xl border border-sky-300 text-base" title="切換音效">
+          🔊
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== 畫面 1：歡迎與輸入玩家姓名 ==================== -->
+    <section id="screen-welcome" class="flex-1 flex flex-col items-center justify-center my-auto py-4">
+      <div class="bg-white/95 backdrop-blur-md rounded-3xl p-6 sm:p-10 max-w-lg w-full shadow-2xl border-4 border-amber-300 text-center relative overflow-hidden">
+        <!-- 頂部裝飾彩帶 -->
+        <div class="absolute top-0 inset-x-0 h-3 bg-gradient-to-r from-amber-400 via-emerald-400 to-sky-500"></div>
+
+        <!-- 遊戲吉祥物與標題 -->
+        <div class="inline-flex items-center justify-center w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-b from-sky-50 via-amber-50 to-amber-100 border-4 border-amber-300 shadow-lg p-1.5 mb-3 animate-float">
+          <svg viewBox="0 0 200 220" class="w-full h-full drop-shadow-md" aria-label="永光小伙子火焰吉祥物">
+            <defs>
+              <linearGradient id="flameBodyGradWelcome" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FF3D00"/>
+                <stop offset="30%" stop-color="#FF7A00"/>
+                <stop offset="66%" stop-color="#FFC400"/>
+                <stop offset="100%" stop-color="#FFE600"/>
+              </linearGradient>
+              <linearGradient id="flameInnerGradWelcome" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FF9100" stop-opacity="0.7"/>
+                <stop offset="100%" stop-color="#FFF59D" stop-opacity="0.25"/>
+              </linearGradient>
+              <linearGradient id="flameFootGradWelcome" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FF8F00"/>
+                <stop offset="100%" stop-color="#FFB300"/>
+              </linearGradient>
+            </defs>
+            <!-- 可愛雙腳 -->
+            <path d="M62 178 L62 196 Q44 198 44 207 Q44 214 68 214 Q86 214 86 202 L86 178 Z" fill="url(#flameFootGradWelcome)" stroke="#D84315" stroke-width="3"/>
+            <path d="M138 178 L138 196 Q156 198 156 207 Q156 214 132 214 Q114 214 114 202 L114 178 Z" fill="url(#flameFootGradWelcome)" stroke="#D84315" stroke-width="3"/>
+            <!-- 張開的五指小手（左） -->
+            <path d="M44 136 C28 130 18 118 14 123 C10 128 19 138 25 141 C14 139 7 142 8 148 C9 153 20 153 27 152 C17 155 12 160 15 165 C18 169 28 164 33 160 C27 167 25 173 30 175 C35 177 41 169 44 163 C47 168 51 171 54 168 C57 165 53 158 50 154 Z" fill="#FFD600" stroke="#E65100" stroke-width="3" stroke-linejoin="round"/>
+            <!-- 張開的五指小手（右） -->
+            <path d="M156 136 C172 130 182 118 186 123 C190 128 181 138 175 141 C186 139 193 142 192 148 C191 153 180 153 173 152 C183 155 188 160 185 165 C182 169 172 164 167 160 C173 167 175 173 170 175 C165 177 159 169 156 163 C153 168 149 171 146 168 C143 165 147 158 150 154 Z" fill="#FFD600" stroke="#E65100" stroke-width="3" stroke-linejoin="round"/>
+            <!-- 捲曲火焰身體輪廓 -->
+            <path d="M100 186 C56 186 36 154 38 118 C40 94 46 80 42 64 C39 52 50 42 58 50 C63 55 64 62 64 62 C64 38 78 24 88 16 C96 10 92 4 86 2 C104 2 122 16 122 38 C122 48 117 56 117 56 C125 46 138 40 144 46 C149 51 143 62 141 68 C154 78 162 96 162 118 C164 154 144 186 100 186 Z" fill="url(#flameBodyGradWelcome)" stroke="#D84315" stroke-width="3.5" stroke-linejoin="round"/>
+            <!-- 火焰內部高光紋理 -->
+            <path d="M98 30 C84 44 82 62 92 74 C98 58 106 48 106 34 C106 30 102 27 98 30 Z" fill="url(#flameInnerGradWelcome)"/>
+            <!-- 彎彎眉毛 -->
+            <path d="M62 92 Q74 84 85 90" fill="none" stroke="#4E260E" stroke-width="4.5" stroke-linecap="round"/>
+            <path d="M138 92 Q126 84 115 90" fill="none" stroke="#4E260E" stroke-width="4.5" stroke-linecap="round"/>
+            <!-- 水汪汪大眼睛 -->
+            <ellipse cx="74" cy="114" rx="16" ry="20" fill="#FFFFFF" stroke="#4E260E" stroke-width="2.5"/>
+            <ellipse cx="76" cy="115" rx="11.5" ry="15" fill="#3E1C0A"/>
+            <circle cx="71" cy="108" r="4.8" fill="#FFFFFF"/>
+            <circle cx="80" cy="121" r="2.3" fill="#FFFFFF"/>
+            <ellipse cx="126" cy="114" rx="16" ry="20" fill="#FFFFFF" stroke="#4E260E" stroke-width="2.5"/>
+            <ellipse cx="124" cy="115" rx="11.5" ry="15" fill="#3E1C0A"/>
+            <circle cx="119" cy="108" r="4.8" fill="#FFFFFF"/>
+            <circle cx="128" cy="121" r="2.3" fill="#FFFFFF"/>
+            <!-- 粉紅腮紅 -->
+            <ellipse cx="53" cy="133" rx="9" ry="5.5" fill="#FF7043" opacity="0.65"/>
+            <ellipse cx="147" cy="133" rx="9" ry="5.5" fill="#FF7043" opacity="0.65"/>
+            <!-- 開心張嘴笑容與小舌頭 -->
+            <path d="M84 136 Q100 141 116 136 C116 153 108 161 100 161 C92 161 84 153 84 136 Z" fill="#6D1B1B" stroke="#4E260E" stroke-width="2.5"/>
+            <path d="M90 154 Q100 147 110 154 Q105 160 100 160 Q95 160 90 154 Z" fill="#FF6E6E"/>
+          </svg>
+        </div>
+        <div class="inline-block bg-sky-100 text-sky-700 font-black text-xs px-3 py-1 rounded-full mb-2 tracking-wider">
+          100% 免費暢玩 • 無廣告 • 時間應用題專訓
+        </div>
+        <h1 class="text-3xl sm:text-4xl font-black text-slate-800 tracking-tight mb-1">
+          永光小伙子大冒險
+        </h1>
+        <p class="text-amber-600 font-extrabold text-base sm:text-lg mb-5">
+          ⏰ 時間冒險島 · 數學 RPG 闖關 ⏰
+        </p>
+
+        <!-- 玩家姓名輸入框 -->
+        <div class="bg-sky-50/90 rounded-2xl p-4 sm:p-5 border-2 border-sky-200 mb-5 text-left">
+          <label for="player-name-input" class="block text-sm font-black text-sky-900 mb-2">
+            ✍️ 請輸入永光小伙子的姓名（自動記錄龍虎榜成績）：
+          </label>
+          <input
+            type="text"
+            id="player-name-input"
+            maxlength="12"
+            placeholder="例如：陳小明、永光時間王..."
+            class="w-full px-4 py-3 rounded-xl border-2 border-sky-300 focus:border-amber-400 focus:outline-none text-lg font-bold text-slate-800 bg-white shadow-inner"
+            onkeydown="if(event.key==='Enter') startGameFromWelcome()"
+          />
+          <p id="name-error-msg" class="hidden text-rose-600 text-xs font-bold mt-1.5">
+            ⚠️ 請先輸入你的名字再出發冒險喔！
+          </p>
+        </div>
+
+        <!-- 開始冒險與查看龍虎榜按鈕 -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button onclick="startGameFromWelcome()" class="btn-game flex-1 bg-gradient-to-b from-emerald-400 to-emerald-600 hover:from-emerald-300 hover:to-emerald-500 text-white font-black text-lg py-3.5 px-6 rounded-2xl border-2 border-emerald-700 flex items-center justify-center gap-2">
+            <span>🚀</span>
+            <span>開始時間冒險</span>
+          </button>
+          <button onclick="openLeaderboard()" class="btn-game bg-gradient-to-b from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-white font-black text-lg py-3.5 px-5 rounded-2xl border-2 border-orange-600 flex items-center justify-center gap-2">
+            <span>🏆</span>
+            <span>龍虎榜</span>
+          </button>
+        </div>
+
+        <!-- 涵蓋五大範疇提示 -->
+        <div class="mt-6 pt-4 border-t border-slate-200 grid grid-cols-5 gap-1 text-center">
+          <div class="bg-slate-50 rounded-xl p-1.5">
+            <div class="text-lg">⏱️</div>
+            <div class="text-[11px] font-bold text-slate-600">認識秒</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-1.5">
+            <div class="text-lg">🕰️</div>
+            <div class="text-[11px] font-bold text-slate-600">24小時制</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-1.5">
+            <div class="text-lg">⏳</div>
+            <div class="text-[11px] font-bold text-slate-600">時間間隔</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-1.5">
+            <div class="text-lg">📅</div>
+            <div class="text-[11px] font-bold text-slate-600">起訖時間</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-1.5">
+            <div class="text-lg">👑</div>
+            <div class="text-[11px] font-bold text-slate-600">綜合Boss</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 畫面 2：島嶼式闖關地圖 ==================== -->
+    <section id="screen-map" class="hidden flex-1 flex flex-col">
+      <div class="bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-xl border-4 border-sky-200 flex-1 flex flex-col">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
+              <span>🗺️</span>
+              <span>選擇冒險島嶼</span>
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 font-bold">
+              打敗各島守護獸可獲得高分、升級稱號與專屬外觀裝備！
+            </p>
+          </div>
+          <button onclick="resetProgressConfirm()" class="text-xs bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 font-bold px-3 py-1.5 rounded-xl transition">
+            🔄 重置本機進度
+          </button>
+        </div>
+
+        <!-- 永光小伙子成長狀態與即時造型展示區 -->
+        <div class="bg-gradient-to-r from-amber-50 via-orange-50/80 to-sky-50 rounded-2xl p-3.5 sm:p-4 border-2 border-amber-300 shadow-inner mb-4 flex flex-col sm:flex-row items-center gap-4">
+          <!-- 即時全身造型舞台 -->
+          <div class="relative flex flex-col items-center justify-center bg-white/90 rounded-2xl p-2 border-2 border-amber-200 shadow-sm w-32 h-32 sm:w-36 sm:h-36 shrink-0">
+            <div id="map-hero-showcase" class="w-24 h-24 sm:w-28 sm:h-28 animate-float flex items-center justify-center">
+              <!-- 由 renderCharacterSVG 動態渲染 -->
+            </div>
+            <span class="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full mt-0.5">
+              ✨ 即時造型預覽
+            </span>
+          </div>
+
+          <!-- 成長等級進度與 5 大外觀裝備衣櫃列 -->
+          <div class="flex-1 w-full">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+              <div class="flex items-center gap-2">
+                <span id="map-growth-level" class="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-xs sm:text-sm px-3 py-1 rounded-xl shadow-sm">
+                  Lv.1 火焰見習生
+                </span>
+                <span id="map-growth-next-hint" class="text-xs font-bold text-slate-500">
+                  通關島嶼與累積積分可提升等級！
+                </span>
+              </div>
+              <span id="map-gear-summary" class="text-xs font-black text-amber-700 bg-amber-100/80 px-2.5 py-1 rounded-lg">
+                已解鎖外觀：0 / 5 件
+              </span>
+            </div>
+
+            <!-- 成長經驗條 -->
+            <div class="w-full h-3 bg-white rounded-full overflow-hidden border border-amber-300 mb-3 shadow-inner">
+              <div id="map-growth-bar" class="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 transition-all duration-500" style="width: 15%"></div>
+            </div>
+
+            <!-- 5 格專屬外觀裝備切換列 -->
+            <div class="text-[11px] font-black text-slate-600 mb-1.5 flex items-center justify-between">
+              <span>🎒 專屬外觀裝備欄（點擊已解鎖道具可自由穿戴 / 卸下）：</span>
+            </div>
+            <div id="map-gear-slots" class="grid grid-cols-5 gap-1.5 sm:gap-2">
+              <!-- 由 JS 動態渲染 5 件裝備格子 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 個島嶼關卡卡片列表 -->
+        <div id="islands-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 my-auto">
+          <!-- 由 JavaScript 動態渲染 5 座島嶼 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 畫面 3：RPG 戰鬥與解題競技場 ==================== -->
+    <section id="screen-battle" class="hidden flex-1 flex flex-col gap-3">
+      <!-- 頂部關卡狀態與返回按鈕 -->
+      <div class="flex items-center justify-between bg-white/90 backdrop-blur-md rounded-2xl px-4 py-2 shadow border-2 border-sky-200">
+        <button onclick="exitBattleToMap()" class="btn-game bg-slate-200 hover:bg-slate-300 text-slate-700 font-black px-3 py-1.5 rounded-xl text-xs sm:text-sm flex items-center gap-1">
+          <span>⬅️</span>
+          <span>返回地圖</span>
+        </button>
+
+        <div class="text-center">
+          <div id="battle-island-title" class="font-black text-slate-800 text-sm sm:text-base">🏝️ 秒針森林</div>
+          <div class="text-xs font-bold text-sky-600">
+            第 <span id="battle-q-num">1</span> / <span id="battle-q-total">6</span> 題
+          </div>
+        </div>
+
+        <!-- 連擊顯示 -->
+        <div id="battle-combo-badge" class="bg-gradient-to-r from-orange-500 to-rose-500 text-white font-black px-3 py-1 rounded-xl text-xs sm:text-sm shadow transition-transform">
+          🔥 <span id="battle-combo-count">0</span> 連擊
+        </div>
+      </div>
+
+      <!-- RPG 戰鬥視覺舞台 -->
+      <div id="battle-stage" class="relative rounded-3xl overflow-hidden shadow-xl border-4 border-white min-h-[195px] sm:min-h-[225px] flex flex-col justify-between p-4 bg-gradient-to-b from-emerald-300 via-teal-200 to-amber-100">
+        <!-- 場景背景裝飾 -->
+        <div id="stage-bg-decor" class="absolute inset-0 pointer-events-none opacity-30 flex items-center justify-around text-7xl sm:text-8xl">
+          <span>🌲</span><span>⏱️</span><span>🌳</span>
+        </div>
+
+        <!-- 雙方血條資訊列 -->
+        <div class="relative z-10 grid grid-cols-2 gap-3 sm:gap-8">
+          <!-- 我方勇者血條 -->
+          <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-2.5 border-2 border-emerald-400 shadow">
+            <div class="flex justify-between items-center text-xs sm:text-sm font-black mb-1">
+              <span class="text-emerald-800 truncate flex items-center gap-1" id="battle-hero-name">🔥 小勇士</span>
+              <span class="text-emerald-600" id="hero-hp-text">100/100</span>
+            </div>
+            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+              <div id="hero-hp-bar" class="h-full bg-gradient-to-r from-emerald-400 to-green-500 transition-all duration-300" style="width: 100%"></div>
+            </div>
+          </div>
+
+          <!-- 敵方時間怪物血條 -->
+          <div class="bg-white/90 backdrop-blur-sm rounded-2xl p-2.5 border-2 border-rose-400 shadow">
+            <div class="flex justify-between items-center text-xs sm:text-sm font-black mb-1">
+              <span class="text-rose-800 truncate" id="battle-monster-name">👾 秒針史萊姆</span>
+              <span class="text-rose-600" id="monster-hp-text">100/100</span>
+            </div>
+            <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300">
+              <div id="monster-hp-bar" class="h-full bg-gradient-to-r from-rose-500 to-orange-500 transition-all duration-300" style="width: 100%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 角色對峙區 -->
+        <div class="relative z-10 flex items-end justify-around pt-4 pb-1">
+          <!-- 勇者角色（永光小伙子火焰角色 + 即時外觀裝備） -->
+          <div id="hero-sprite-wrap" class="relative flex flex-col items-center">
+            <div id="hero-sprite" class="w-24 h-24 sm:w-28 sm:h-28 animate-float drop-shadow-md select-none flex items-center justify-center">
+              <!-- 由 renderCharacterSVG 動態渲染穿戴裝備的小伙子 -->
+            </div>
+            <div class="w-16 h-3 bg-black/20 rounded-full blur-[2px] mt-1"></div>
+          </div>
+
+          <!-- 中央特效文字區 -->
+          <div id="battle-fx-layer" class="absolute inset-0 flex items-center justify-center pointer-events-none"></div>
+
+          <!-- 怪物角色 -->
+          <div id="monster-sprite-wrap" class="relative flex flex-col items-center">
+            <div id="monster-sprite" class="text-6xl sm:text-7xl animate-monster drop-shadow-md select-none">👾</div>
+            <div class="w-16 h-3 bg-black/20 rounded-full blur-[2px] mt-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 題目與作答互動區 -->
+      <div class="bg-white/95 backdrop-blur-md rounded-3xl p-4 sm:p-6 shadow-xl border-4 border-amber-300 flex-1 flex flex-col justify-between">
+        <div>
+          <!-- 題型標籤與提示按鈕 -->
+          <div class="flex items-center justify-between gap-2 mb-2.5">
+            <span id="question-tag" class="bg-sky-100 text-sky-800 font-black text-xs px-3 py-1 rounded-full">
+              ⏱️ 時間單位換算
+            </span>
+            <button onclick="showHintModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 font-black text-xs px-3 py-1 rounded-full border border-amber-300 transition flex items-center gap-1">
+              <span>💡</span>
+              <span>解題思路提示</span>
+            </button>
+          </div>
+
+          <!-- 題目敘述 -->
+          <div id="question-text" class="text-lg sm:text-2xl font-black text-slate-800 leading-relaxed mb-4 bg-slate-50 p-4 rounded-2xl border-2 border-slate-200">
+            題目載入中...
+          </div>
+        </div>
+
+        <!-- 四選一作答按鈕區 -->
+        <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- 由 JS 動態生成 4 個大按鈕 -->
+        </div>
+
+        <!-- 答題後即時解析面板 (答對或答錯皆可檢視多重思維) -->
+        <div id="feedback-panel" class="hidden mt-4 rounded-2xl p-4 border-2 transition-all">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div id="feedback-title" class="font-black text-lg flex items-center gap-2">
+              🎉 答對了！發動暴擊！
+            </div>
+            <button id="next-question-btn" onclick="nextQuestion()" class="btn-game bg-gradient-to-b from-sky-400 to-blue-600 text-white font-black px-5 py-2 rounded-xl text-sm sm:text-base border border-blue-700">
+              下一題 ➡️
+            </button>
+          </div>
+          <!-- 多重解題思維並列卡片 -->
+          <div id="explanation-content" class="text-sm text-slate-700 space-y-2">
+            <!-- 由 JS 填入兩種解題方法 -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 彈窗 1：關卡勝利 / 戰敗結算 ==================== -->
+    <div id="modal-result" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-7 text-center border-4 border-amber-400 shadow-2xl relative my-auto">
+        <div id="result-emoji" class="text-6xl mb-2">🏆</div>
+        <h3 id="result-title" class="text-2xl sm:text-3xl font-black text-slate-800 mb-1">島嶼制霸！</h3>
+        <p id="result-subtitle" class="text-slate-500 font-bold text-sm mb-4">成功打敗守關怪物，獲得豐厚積分！</p>
+
+        <!-- 通關專屬外觀獎勵展示區 -->
+        <div id="result-reward-box" class="hidden bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-100 rounded-2xl p-3.5 border-2 border-amber-400 mb-4 shadow-md anim-reward-pop">
+          <div class="text-xs font-black text-orange-600 tracking-wider mb-2 flex items-center justify-center gap-1">
+            <span>🎁</span>
+            <span id="result-reward-header">解鎖新外觀道具！已自動穿戴！</span>
+            <span>✨</span>
+          </div>
+          <div class="flex items-center justify-center gap-3 bg-white/90 rounded-xl p-2.5 border border-amber-200">
+            <div id="result-reward-preview" class="w-20 h-20 shrink-0 flex items-center justify-center">
+              <!-- 動態渲染穿戴新裝備後的小伙子全身預覽 -->
+            </div>
+            <div class="text-left">
+              <div class="inline-flex items-center gap-1 bg-amber-500 text-white text-xs font-black px-2 py-0.5 rounded-full mb-1">
+                <span id="result-reward-icon">🍃</span>
+                <span id="result-reward-name">翠綠探險葉帽</span>
+              </div>
+              <p id="result-reward-desc" class="text-xs text-slate-600 font-bold leading-snug">
+                戴在火焰頭冠一側的發光魔法葉片，象徵森林時間探索者的榮耀！
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-50 rounded-2xl p-3.5 border-2 border-amber-200 grid grid-cols-3 gap-2 mb-5">
+          <div>
+            <div class="text-xs text-slate-500 font-bold">本關得分</div>
+            <div id="result-score" class="text-xl font-black text-amber-600">+0</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500 font-bold">答對題數</div>
+            <div id="result-correct" class="text-xl font-black text-emerald-600">0/6</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500 font-bold">最高連擊</div>
+            <div id="result-combo" class="text-xl font-black text-rose-600">0🔥</div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button onclick="closeResultAndReturnMap()" class="btn-game flex-1 bg-gradient-to-b from-emerald-400 to-emerald-600 text-white font-black py-3 px-4 rounded-2xl border border-emerald-700">
+            🗺️ 返回冒險地圖
+          </button>
+          <button onclick="openLeaderboard()" class="btn-game bg-gradient-to-b from-amber-400 to-orange-500 text-white font-black py-3 px-4 rounded-2xl border border-orange-600">
+            🏆 查看龍虎榜
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 彈窗 2：龍虎榜 (Leaderboard) ==================== -->
+    <div id="modal-leaderboard" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+      <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[88vh] flex flex-col border-4 border-amber-400 shadow-2xl overflow-hidden">
+        <!-- 標題列 -->
+        <div class="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 px-5 py-4 flex items-center justify-between text-white">
+          <div class="flex items-center gap-2">
+            <span class="text-3xl">🏆</span>
+            <div>
+              <h3 class="text-xl sm:text-2xl font-black tracking-wide">永光小伙子龍虎榜</h3>
+              <p class="text-xs font-bold text-amber-100">挑戰最高積分與連擊紀錄，登上永光冠軍寶座！</p>
+            </div>
+          </div>
+          <button onclick="closeLeaderboard()" class="w-9 h-9 rounded-full bg-white/25 hover:bg-white/40 flex items-center justify-center font-black text-lg transition">
+            ✕
+          </button>
+        </div>
+
+        <!-- 榜單內容區 -->
+        <div class="p-4 sm:p-5 overflow-y-auto flex-1">
+          <!-- 個人目前戰績摘要卡片 -->
+          <div id="lb-my-summary" class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-3.5 mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <div id="lb-my-avatar" class="w-12 h-12 rounded-xl bg-amber-100 border border-amber-300 p-0.5 flex items-center justify-center shrink-0">
+                <!-- 由 renderCharacterSVG 動態渲染 -->
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs text-sky-600 font-bold">目前登入勇士</span>
+                  <span id="lb-my-level-badge" class="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-black">Lv.1 火焰見習生</span>
+                </div>
+                <div id="lb-my-name" class="font-black text-slate-800 text-base">尚未輸入</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 text-right">
+              <div>
+                <div class="text-[11px] text-slate-500 font-bold">我的總積分</div>
+                <div id="lb-my-score" class="font-black text-amber-600 text-lg">0</div>
+              </div>
+              <div>
+                <div class="text-[11px] text-slate-500 font-bold">最高連擊</div>
+                <div id="lb-my-combo" class="font-black text-rose-600 text-lg">0🔥</div>
+              </div>
+              <div>
+                <div class="text-[11px] text-slate-500 font-bold">已通關</div>
+                <div id="lb-my-islands" class="font-black text-emerald-600 text-lg">0/5</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 排行榜表格 -->
+          <div class="overflow-x-auto rounded-2xl border-2 border-slate-200">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100 text-slate-600 text-xs font-black border-b-2 border-slate-200">
+                  <th class="py-2.5 px-3 text-center w-14">排名</th>
+                  <th class="py-2.5 px-3">勇士姓名與等級</th>
+                  <th class="py-2.5 px-3 text-right">總積分</th>
+                  <th class="py-2.5 px-3 text-center">最高連擊</th>
+                  <th class="py-2.5 px-3 text-center">通關 / 裝備</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-tbody" class="divide-y divide-slate-100 text-sm font-bold">
+                <!-- 由 JS 動態生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 龍虎榜底部操作列 -->
+        <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center justify-between gap-2">
+          <button onclick="clearLeaderboardConfirm()" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold px-3 py-2 rounded-xl transition">
+            🗑️ 清空龍虎榜紀錄
+          </button>
+          <button onclick="closeLeaderboard()" class="btn-game bg-slate-700 hover:bg-slate-600 text-white font-black px-5 py-2 rounded-xl text-sm">
+            關閉榜單
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 彈窗 3：解題思路提示 ==================== -->
+    <div id="modal-hint" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-lg w-full p-6 border-4 border-sky-400 shadow-2xl">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xl font-black text-sky-900 flex items-center gap-2">
+            <span>💡</span>
+            <span>永光小伙子解題錦囊</span>
+          </h3>
+          <button onclick="closeHintModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-black text-slate-600">✕</button>
+        </div>
+        <div id="hint-modal-body" class="space-y-3 text-sm text-slate-700">
+          <!-- 動態顯示思路提示 -->
+        </div>
+        <button onclick="closeHintModal()" class="btn-game w-full mt-5 bg-sky-500 hover:bg-sky-400 text-white font-black py-3 rounded-2xl border border-sky-600">
+          我懂了，繼續挑戰！
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== 彈窗 4：修改玩家姓名 ==================== -->
+    <div id="modal-edit-name" class="hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-sm w-full p-6 border-4 border-sky-400 shadow-2xl text-center">
+        <div class="text-4xl mb-2">✏️</div>
+        <h3 class="text-xl font-black text-slate-800 mb-1">修改玩家姓名</h3>
+        <p class="text-xs text-slate-500 font-bold mb-4">輸入新名字將切換或建立該勇士的專屬戰績與裝備</p>
+        <input
+          type="text"
+          id="edit-name-input"
+          maxlength="12"
+          placeholder="請輸入新名字"
+          class="w-full px-4 py-2.5 rounded-xl border-2 border-sky-300 focus:border-amber-400 focus:outline-none text-base font-bold text-slate-800 mb-4"
+          onkeydown="if(event.key==='Enter') saveEditedName()"
+        />
+        <div class="flex gap-2">
+          <button onclick="closeNameModal()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black py-2.5 rounded-xl">
+            取消
+          </button>
+          <button onclick="saveEditedName()" class="btn-game flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-black py-2.5 rounded-xl border border-emerald-600">
+            儲存名稱
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 自訂 Toast 訊息框 (取代 alert) -->
+    <div id="toast-box" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-slate-800/95 text-white font-bold px-5 py-3 rounded-2xl shadow-xl border border-slate-600 text-sm flex items-center gap-2 transition-all">
+      <span id="toast-icon">ℹ️</span>
+      <span id="toast-text">提示訊息</span>
+    </div>
+
+  </div>
+
+  <!-- ==================== JavaScript 遊戲邏輯與題庫系統 ==================== -->
+  <script>
+    // --- 1. Web Audio API 內建音效合成器 (無需外部音檔) ---
+    let soundEnabled = true;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playTone(freq, type, duration, delay = 0, vol = 0.15) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime + delay);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(audioCtx.currentTime + delay);
+        osc.stop(audioCtx.currentTime + delay + duration);
+      } catch (e) {
+        // 忽略瀏覽器自動播放限制錯誤
+      }
+    }
+
+    const SoundFX = {
+      click: () => playTone(520, 'sine', 0.08, 0, 0.1),
+      correct: () => {
+        playTone(523.25, 'triangle', 0.12, 0, 0.18);
+        playTone(659.25, 'triangle', 0.12, 0.09, 0.18);
+        playTone(783.99, 'triangle', 0.22, 0.18, 0.2);
+      },
+      wrong: () => {
+        playTone(240, 'sawtooth', 0.18, 0, 0.14);
+        playTone(185, 'sawtooth', 0.25, 0.14, 0.14);
+      },
+      victory: () => {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, idx) => {
+          playTone(f, 'triangle', 0.2, idx * 0.11, 0.2);
+        });
+      }
+    };
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('sound-toggle-btn').textContent = soundEnabled ? '🔊' : '🔇';
+      if (soundEnabled) SoundFX.click();
+      showToast(soundEnabled ? '已開啟遊戲音效' : '已切換為靜音模式', soundEnabled ? '🔊' : '🔇');
+    }
+
+    // --- 2. 五大冒險島嶼定義、成長等級表與專屬外觀道具 ---
+    const GEAR_ITEMS = [
+      {
+        id: 'gear_leaf',
+        islandId: 'island_1',
+        name: '翠綠探險葉帽',
+        icon: '🍃',
+        slotLabel: '第1島頭飾',
+        desc: '戴在火焰頭冠一側的發光翠綠魔法葉片與小探險徽章，充滿森林活力！'
+      },
+      {
+        id: 'gear_glasses',
+        islandId: 'island_2',
+        name: '酷炫太陽眼鏡',
+        icon: '🕶️',
+        slotLabel: '第2島護目鏡',
+        desc: '戴在雙眼上方的半透明帥氣橘藍漸層太陽眼鏡，海灘陽光再強也不怕！'
+      },
+      {
+        id: 'gear_cape',
+        islandId: 'island_3',
+        name: '烈焰英雄披風',
+        icon: '🧣',
+        slotLabel: '第3島披風',
+        desc: '披在身後隨風飄揚的紅金雙色英雄披風，散發無畏的勇者氣息！'
+      },
+      {
+        id: 'gear_staff',
+        islandId: 'island_4',
+        name: '黃金懷錶法杖',
+        icon: '🪄',
+        slotLabel: '第4島法杖',
+        desc: '握在右手上的閃亮金色齒輪時光法杖，能夠精準掌控每一分每一秒！'
+      },
+      {
+        id: 'gear_crown',
+        islandId: 'island_5',
+        name: '永光時光皇冠',
+        icon: '👑',
+        slotLabel: '第5島皇冠',
+        desc: '懸浮在頭頂火焰尖端上的璀璨黃金鑲寶石皇冠，象徵永光時間之王的最高榮耀！'
+      }
+    ];
+
+    const GROWTH_LEVELS = [
+      { level: 1, title: '火焰見習生', minCleared: 0, minScore: 0 },
+      { level: 2, title: '森林探險家', minCleared: 1, minScore: 300 },
+      { level: 3, title: '航海時光客', minCleared: 2, minScore: 900 },
+      { level: 4, title: '熔岩守護者', minCleared: 3, minScore: 1600 },
+      { level: 5, title: '城堡大騎士', minCleared: 4, minScore: 2400 },
+      { level: 6, title: '永光時間之王', minCleared: 5, minScore: 3200 }
+    ];
+
+    // 計算玩家目前成長等級、稱號與進度條百分比
+    function getPlayerGrowthInfo(stateObj = playerState) {
+      const cleared = (stateObj.clearedIslands || []).length;
+      const score = stateObj.totalScore || 0;
+
+      // 綜合通關數與積分判定最高達成等級
+      let currentIdx = 0;
+      for (let i = GROWTH_LEVELS.length - 1; i >= 0; i--) {
+        const req = GROWTH_LEVELS[i];
+        if (cleared >= req.minCleared || score >= req.minScore) {
+          currentIdx = i;
+          break;
+        }
+      }
+
+      const current = GROWTH_LEVELS[currentIdx];
+      const next = GROWTH_LEVELS[currentIdx + 1] || null;
+      let progressPct = 100;
+      let nextHint = '已達最高傳說等級！';
+
+      if (next) {
+        const scoreRatio = Math.min(1, score / Math.max(1, next.minScore));
+        const clearRatio = Math.min(1, cleared / Math.max(1, next.minCleared));
+        progressPct = Math.max(12, Math.round(Math.max(scoreRatio, clearRatio) * 100));
+        nextHint = `下一階：Lv.${next.level} ${next.title}（通關 ${next.minCleared} 島或達 ${next.minScore} 分）`;
+      }
+
+      return {
+        level: current.level,
+        title: current.title,
+        fullLabel: `Lv.${current.level} ${current.title}`,
+        progressPct,
+        nextHint
+      };
+    }
+
+    /**
+     * 動態生成穿戴外觀道具的「永光小伙子」SVG 向量圖
+     * @param {string[]} equippedIds - 目前啟用穿戴的裝備 ID 陣列
+     * @param {string} uidPrefix - 避免同頁面多個 SVG 漸層 ID 衝突的唯一前綴
+     */
+    function renderCharacterSVG(equippedIds = [], uidPrefix = 'char') {
+      const hasLeaf = equippedIds.includes('gear_leaf');
+      const hasGlasses = equippedIds.includes('gear_glasses');
+      const hasCape = equippedIds.includes('gear_cape');
+      const hasStaff = equippedIds.includes('gear_staff');
+      const hasCrown = equippedIds.includes('gear_crown');
+
+      return `
+        <svg viewBox="-16 -24 236 250" class="w-full h-full overflow-visible drop-shadow-sm" aria-label="永光小伙子角色">
+          <defs>
+            <linearGradient id="${uidPrefix}_body" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FF3D00"/>
+              <stop offset="30%" stop-color="#FF7A00"/>
+              <stop offset="66%" stop-color="#FFC400"/>
+              <stop offset="100%" stop-color="#FFE600"/>
+            </linearGradient>
+            <linearGradient id="${uidPrefix}_inner" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FF9100" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#FFF59D" stop-opacity="0.25"/>
+            </linearGradient>
+            <linearGradient id="${uidPrefix}_foot" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FF8F00"/>
+              <stop offset="100%" stop-color="#FFB300"/>
+            </linearGradient>
+            <linearGradient id="${uidPrefix}_cape" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#EF4444"/>
+              <stop offset="60%" stop-color="#DC2626"/>
+              <stop offset="100%" stop-color="#991B1B"/>
+            </linearGradient>
+            <linearGradient id="${uidPrefix}_lens" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#0EA5E9" stop-opacity="0.72"/>
+              <stop offset="100%" stop-color="#1E3A8A" stop-opacity="0.82"/>
+            </linearGradient>
+            <linearGradient id="${uidPrefix}_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FEF08A"/>
+              <stop offset="50%" stop-color="#FACC15"/>
+              <stop offset="100%" stop-color="#CA8A04"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 【裝備 3：烈焰英雄披風】（繪製在身體後方） -->
+          ${hasCape ? `
+            <g>
+              <path d="M46 122 C20 138 6 168 12 194 C36 188 68 196 100 196 C132 196 164 188 188 194 C194 168 180 138 154 122 Z" fill="url(#${uidPrefix}_cape)" stroke="#FACC15" stroke-width="4" stroke-linejoin="round"/>
+              <path d="M16 184 Q100 192 184 184" fill="none" stroke="#FDE047" stroke-width="3" stroke-dasharray="6 4"/>
+            </g>
+          ` : ''}
+
+          <!-- 可愛雙腳 -->
+          <path d="M62 178 L62 196 Q44 198 44 207 Q44 214 68 214 Q86 214 86 202 L86 178 Z" fill="url(#${uidPrefix}_foot)" stroke="#D84315" stroke-width="3"/>
+          <path d="M138 178 L138 196 Q156 198 156 207 Q156 214 132 214 Q114 214 114 202 L114 178 Z" fill="url(#${uidPrefix}_foot)" stroke="#D84315" stroke-width="3"/>
+
+          <!-- 張開的五指小手（左） -->
+          <path d="M44 136 C28 130 18 118 14 123 C10 128 19 138 25 141 C14 139 7 142 8 148 C9 153 20 153 27 152 C17 155 12 160 15 165 C18 169 28 164 33 160 C27 167 25 173 30 175 C35 177 41 169 44 163 C47 168 51 171 54 168 C57 165 53 158 50 154 Z" fill="#FFD600" stroke="#E65100" stroke-width="3" stroke-linejoin="round"/>
+          <!-- 張開的五指小手（右） -->
+          <path d="M156 136 C172 130 182 118 186 123 C190 128 181 138 175 141 C186 139 193 142 192 148 C191 153 180 153 173 152 C183 155 188 160 185 165 C182 169 172 164 167 160 C173 167 175 173 170 175 C165 177 159 169 156 163 C153 168 149 171 146 168 C143 165 147 158 150 154 Z" fill="#FFD600" stroke="#E65100" stroke-width="3" stroke-linejoin="round"/>
+
+          <!-- 捲曲火焰身體輪廓 -->
+          <path d="M100 186 C56 186 36 154 38 118 C40 94 46 80 42 64 C39 52 50 42 58 50 C63 55 64 62 64 62 C64 38 78 24 88 16 C96 10 92 4 86 2 C104 2 122 16 122 38 C122 48 117 56 117 56 C125 46 138 40 144 46 C149 51 143 62 141 68 C154 78 162 96 162 118 C164 154 144 186 100 186 Z" fill="url(#${uidPrefix}_body)" stroke="#D84315" stroke-width="3.5" stroke-linejoin="round"/>
+
+          <!-- 火焰內部高光紋理 -->
+          <path d="M98 30 C84 44 82 62 92 74 C98 58 106 48 106 34 C106 30 102 27 98 30 Z" fill="url(#${uidPrefix}_inner)"/>
+
+          <!-- 【裝備 3 前襟領結扣環】 -->
+          ${hasCape ? `
+            <path d="M54 146 Q100 162 146 146" fill="none" stroke="#FACC15" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="56" cy="146" r="5" fill="#FDE047" stroke="#B45309" stroke-width="2"/>
+            <circle cx="144" cy="146" r="5" fill="#FDE047" stroke="#B45309" stroke-width="2"/>
+          ` : ''}
+
+          <!-- 彎彎眉毛 -->
+          <path d="M62 92 Q74 84 85 90" fill="none" stroke="#4E260E" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M138 92 Q126 84 115 90" fill="none" stroke="#4E260E" stroke-width="4.5" stroke-linecap="round"/>
+
+          <!-- 水汪汪大眼睛 -->
+          <ellipse cx="74" cy="114" rx="16" ry="20" fill="#FFFFFF" stroke="#4E260E" stroke-width="2.5"/>
+          <ellipse cx="76" cy="115" rx="11.5" ry="15" fill="#3E1C0A"/>
+          <circle cx="71" cy="108" r="4.8" fill="#FFFFFF"/>
+          <circle cx="80" cy="121" r="2.3" fill="#FFFFFF"/>
+          <ellipse cx="126" cy="114" rx="16" ry="20" fill="#FFFFFF" stroke="#4E260E" stroke-width="2.5"/>
+          <ellipse cx="124" cy="115" rx="11.5" ry="15" fill="#3E1C0A"/>
+          <circle cx="119" cy="108" r="4.8" fill="#FFFFFF"/>
+          <circle cx="128" cy="121" r="2.3" fill="#FFFFFF"/>
+
+          <!-- 【裝備 2：酷炫太陽眼鏡】（半透明雙色鏡片，保留水汪汪大眼神韻） -->
+          ${hasGlasses ? `
+            <g>
+              <rect x="49" y="96" width="44" height="32" rx="10" fill="url(#${uidPrefix}_lens)" stroke="#1E293B" stroke-width="3.5"/>
+              <rect x="107" y="96" width="44" height="32" rx="10" fill="url(#${uidPrefix}_lens)" stroke="#1E293B" stroke-width="3.5"/>
+              <path d="M93 108 Q100 103 107 108" fill="none" stroke="#1E293B" stroke-width="4" stroke-linecap="round"/>
+              <path d="M40 105 L49 108 M151 108 L160 105" stroke="#1E293B" stroke-width="3.5" stroke-linecap="round"/>
+              <!-- 鏡片帥氣反光條 -->
+              <path d="M56 102 L68 122 M66 102 L74 116" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+              <path d="M114 102 L126 122 M124 102 L132 116" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+            </g>
+          ` : ''}
+
+          <!-- 粉紅腮紅 -->
+          <ellipse cx="53" cy="133" rx="9" ry="5.5" fill="#FF7043" opacity="0.65"/>
+          <ellipse cx="147" cy="133" rx="9" ry="5.5" fill="#FF7043" opacity="0.65"/>
+
+          <!-- 開心張嘴笑容與小舌頭 -->
+          <path d="M84 136 Q100 141 116 136 C116 153 108 161 100 161 C92 161 84 153 84 136 Z" fill="#6D1B1B" stroke="#4E260E" stroke-width="2.5"/>
+          <path d="M90 154 Q100 147 110 154 Q105 160 100 160 Q95 160 90 154 Z" fill="#FF6E6E"/>
+
+          <!-- 【裝備 1：翠綠探險葉帽 / 森林探索者頭飾】 -->
+          ${hasLeaf ? `
+            <g transform="translate(46, 52) rotate(-18)">
+              <path d="M0 16 C-24 2 -34 -22 -10 -34 C12 -44 32 -22 22 4 C16 16 6 18 0 16 Z" fill="#22C55E" stroke="#14532D" stroke-width="3"/>
+              <path d="M-12 -24 Q4 -6 14 12" fill="none" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="14" cy="12" r="6" fill="#FACC15" stroke="#854D0E" stroke-width="2"/>
+            </g>
+          ` : ''}
+
+          <!-- 【裝備 4：黃金懷錶法杖】（握在右側手上） -->
+          ${hasStaff ? `
+            <g transform="translate(184, 52) rotate(12)">
+              <!-- 金色杖身 -->
+              <rect x="-4" y="34" width="8" height="126" rx="4" fill="url(#${uidPrefix}_gold)" stroke="#92400E" stroke-width="2.5"/>
+              <!-- 懷錶時光法球頂端 -->
+              <circle cx="0" cy="18" r="22" fill="#FEF9C3" stroke="#D97706" stroke-width="3.5"/>
+              <circle cx="0" cy="18" r="16" fill="#FFFFFF" stroke="#F59E0B" stroke-width="2"/>
+              <!-- 時針與分針 -->
+              <path d="M0 18 L0 7 M0 18 L9 18" stroke="#B45309" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="0" cy="18" r="3" fill="#EF4444"/>
+              <!-- 閃耀星芒 -->
+              <path d="M-28 6 L-22 6 M-25 3 L-25 9 M24 28 L30 28 M27 25 L27 31" stroke="#FACC15" stroke-width="2.5" stroke-linecap="round"/>
+            </g>
+          ` : ''}
+
+          <!-- 【裝備 5：永光時光皇冠】（懸浮在火焰頂端） -->
+          ${hasCrown ? `
+            <g transform="translate(100, -6)">
+              <!-- 神聖光環 -->
+              <ellipse cx="0" cy="4" rx="34" ry="8" fill="none" stroke="#FDE047" stroke-width="2.5" opacity="0.85"/>
+              <!-- 皇冠主體 -->
+              <path d="M-24 6 L-28 -14 L-12 -2 L0 -20 L12 -2 L28 -14 L24 6 Z" fill="url(#${uidPrefix}_gold)" stroke="#92400E" stroke-width="2.5" stroke-linejoin="round"/>
+              <!-- 皇冠紅藍綠寶石 -->
+              <circle cx="0" cy="-4" r="3.5" fill="#EF4444"/>
+              <circle cx="-14" cy="-1" r="2.5" fill="#3B82F6"/>
+              <circle cx="14" cy="-1" r="2.5" fill="#10B981"/>
+            </g>
+          ` : ''}
+        </svg>
+      `;
+    }
+
+    const ISLANDS = [
+      {
+        id: 'island_1',
+        num: 1,
+        name: '秒針森林',
+        subtitle: '認識「秒」與分秒單位換算',
+        icon: '🌲',
+        rewardGearId: 'gear_leaf',
+        monsterName: '秒針史萊姆',
+        monsterEmoji: '🟢',
+        bgGradient: 'from-emerald-300 via-green-200 to-lime-100',
+        decor: ['🌲', '⏱️', '🌿'],
+        cardBorder: 'border-emerald-400',
+        badgeBg: 'bg-emerald-100 text-emerald-800',
+        questionCount: 6
+      },
+      {
+        id: 'island_2',
+        num: 2,
+        name: '雙時鐘海灘',
+        subtitle: '12小時制與24小時報時制互轉',
+        icon: '🏖️',
+        rewardGearId: 'gear_glasses',
+        monsterName: '潮汐沙漏蟹',
+        monsterEmoji: '🦀',
+        bgGradient: 'from-sky-300 via-cyan-200 to-amber-100',
+        decor: ['🌴', '🕰️', '🐚'],
+        cardBorder: 'border-sky-400',
+        badgeBg: 'bg-sky-100 text-sky-800',
+        questionCount: 6
+      },
+      {
+        id: 'island_3',
+        num: 3,
+        name: '時光火山',
+        subtitle: '計算時間間隔（經過時間）',
+        icon: '🌋',
+        rewardGearId: 'gear_cape',
+        monsterName: '熔岩計時龍',
+        monsterEmoji: '🦖',
+        bgGradient: 'from-orange-300 via-amber-200 to-rose-100',
+        decor: ['🌋', '⏳', '🔥'],
+        cardBorder: 'border-orange-400',
+        badgeBg: 'bg-orange-100 text-orange-800',
+        questionCount: 6
+      },
+      {
+        id: 'island_4',
+        num: 4,
+        name: '未來城堡',
+        subtitle: '推算「結束時間」與「開始時間」',
+        icon: '🏰',
+        rewardGearId: 'gear_staff',
+        monsterName: '發條鎧甲騎士',
+        monsterEmoji: '🤖',
+        bgGradient: 'from-indigo-300 via-purple-200 to-pink-100',
+        decor: ['🏰', '⚙️', '✨'],
+        cardBorder: 'border-purple-400',
+        badgeBg: 'bg-purple-100 text-purple-800',
+        questionCount: 6
+      },
+      {
+        id: 'island_5',
+        num: 5,
+        name: '時間神殿 (終極Boss)',
+        subtitle: '綜合時間應用題與跨日挑戰',
+        icon: '👑',
+        rewardGearId: 'gear_crown',
+        monsterName: '時空魔導王・克羅諾斯',
+        monsterEmoji: '🧙‍♂️',
+        bgGradient: 'from-amber-300 via-yellow-200 to-orange-100',
+        decor: ['🏛️', '👑', '⚡'],
+        cardBorder: 'border-amber-500',
+        badgeBg: 'bg-amber-100 text-amber-900',
+        questionCount: 7
+      }
+    ];
+
+    // 輔助工具：補零與隨機洗牌
+    const pad2 = (n) => String(n).padStart(2, '0');
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    function pickOne(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // 記錄每個島嶼最近出現過的題目簽章，避免重新遊玩時抽到重複題目
+    const recentQuestionSignatures = {};
+
+    // 確保四個選項皆不重複的輔助函式
+    function buildUniqueOptions(correctAns, distractors, fallbackGenerator) {
+      const set = new Set([correctAns]);
+      for (const d of distractors) {
+        if (d && !set.has(d)) set.add(d);
+        if (set.size === 4) break;
+      }
+      let guard = 0;
+      while (set.size < 4 && guard < 30) {
+        guard++;
+        const extra = fallbackGenerator(guard);
+        if (extra && !set.has(extra)) set.add(extra);
+      }
+      return shuffleArray(Array.from(set));
+    }
+
+    // 產生不與上次重複的單題
+    function createNonRepeatingQuestion(islandId, slotKey, builderFn) {
+      if (!recentQuestionSignatures[islandId]) {
+        recentQuestionSignatures[islandId] = {};
+      }
+      const prevSig = recentQuestionSignatures[islandId][slotKey];
+      let candidate = null;
+      for (let attempt = 0; attempt < 25; attempt++) {
+        candidate = builderFn();
+        if (candidate.text !== prevSig) break;
+      }
+      recentQuestionSignatures[islandId][slotKey] = candidate.text;
+      return candidate;
+    }
+
+    /**
+     * 動態題目產生器：確保每次重新遊玩時所有題目數字與情境皆隨機變化，且不會與上次重複！
+     */
+    function generateQuestionsForIsland(islandId) {
+      const questions = [];
+
+      if (islandId === 'island_1') {
+        // --- 島嶼 1：秒的認識與換算 ---
+        // 題型 1：分與秒換算成秒
+        questions.push(createNonRepeatingQuestion(islandId, 'q1', () => {
+          const m1 = randInt(1, 5);
+          const s1 = randInt(6, 54);
+          const ans1 = m1 * 60 + s1;
+          const scene = pickOne([
+            `永光小伙子跑完一圈操場花了 ${m1} 分 ${s1} 秒`,
+            `小美跳繩連續跳了 ${m1} 分 ${s1} 秒`,
+            `遙控車繞行賽道一圈用了 ${m1} 分 ${s1} 秒`
+          ]);
+          return {
+            tag: '⏱️ 分與秒換算',
+            text: `${scene}，請問一共是多少秒？`,
+            options: buildUniqueOptions(
+              `${ans1} 秒`,
+              [`${m1 * 100 + s1} 秒`, `${ans1 + 60} 秒`, `${Math.abs(m1 * 60 - s1)} 秒`, `${ans1 + 10} 秒`],
+              (g) => `${ans1 + g * 15} 秒`
+            ),
+            answer: `${ans1} 秒`,
+            method1: `【拆解相加法】1 分鐘 = 60 秒，所以 ${m1} 分鐘 = ${m1} × 60 = ${m1 * 60} 秒；再加上 ${s1} 秒，得出 ${m1 * 60} + ${s1} = ${ans1} 秒。`,
+            method2: `【生活記憶法】注意時間是「60進位」不是「100進位」，千萬不能直接寫成 ${m1}${s1} 秒喔！`
+          };
+        }));
+
+        // 題型 2：總秒數換算成幾分幾秒
+        questions.push(createNonRepeatingQuestion(islandId, 'q2', () => {
+          const m2 = randInt(2, 6);
+          const s2 = randInt(5, 55);
+          const totalS2 = m2 * 60 + s2;
+          const item = pickOne(['煮一碗泡麵', '下載一部動畫短片', '微波加熱便當', '完成一組平板支撐']);
+          return {
+            tag: '⏱️ 秒化為分與秒',
+            text: `${item}需要 ${totalS2} 秒，也就是幾分幾秒？`,
+            options: buildUniqueOptions(
+              `${m2} 分 ${s2} 秒`,
+              [`${Math.floor(totalS2 / 100)} 分 ${totalS2 % 100} 秒`, `${m2 + 1} 分 ${s2} 秒`, `${m2} 分 ${60 - s2} 秒`],
+              (g) => `${m2} 分 ${(s2 + g * 7) % 59 + 1} 秒`
+            ),
+            answer: `${m2} 分 ${s2} 秒`,
+            method1: `【連減 60 法】1 分鐘有 60 秒，從 ${totalS2} 秒裡面可以減去 ${m2} 個 60 秒（共 ${m2 * 60} 秒），剩下 ${totalS2} - ${m2 * 60} = ${s2} 秒。`,
+            method2: `【除法商餘法】${totalS2} ÷ 60 = ${m2}（分）⋯⋯ 餘 ${s2}（秒），所以是 ${m2} 分 ${s2} 秒。`
+          };
+        }));
+
+        // 題型 3：時鐘秒針走動
+        questions.push(createNonRepeatingQuestion(islandId, 'q3', () => {
+          const startNum = randInt(1, 7);
+          const steps = randInt(2, 5);
+          const endNum = startNum + steps;
+          const secPassed = steps * 5;
+          return {
+            tag: '🕰️ 認識鐘面秒針',
+            text: `時鐘上的秒針從數字「${startNum}」走到數字「${endNum}」，請問經過了多少秒？`,
+            options: buildUniqueOptions(
+              `${secPassed} 秒`,
+              [`${steps} 秒`, `${secPassed + 5} 秒`, `${endNum * 5} 秒`, `${Math.max(5, secPassed - 5)} 秒`],
+              (g) => `${secPassed + g * 10} 秒`
+            ),
+            answer: `${secPassed} 秒`,
+            method1: `【大格計數法】秒針每走 1 大格是 5 秒。從 ${startNum} 到 ${endNum} 共走了 ${endNum} - ${startNum} = ${steps} 大格，${steps} × 5 = ${secPassed} 秒。`,
+            method2: `【刻度相減法】數字 ${endNum} 代表 ${endNum * 5} 秒，數字 ${startNum} 代表 ${startNum * 5} 秒，兩者相減：${endNum * 5} - ${startNum * 5} = ${secPassed} 秒。`
+          };
+        }));
+
+        // 題型 4：賽跑快慢比較（秒數越少越快！）
+        questions.push(createNonRepeatingQuestion(islandId, 'q4', () => {
+          const mingExtra = randInt(1, 9);
+          const mingTotal = 60 + mingExtra;
+          const qiangSec = randInt(55, 59);
+          const huaSec = randInt(46, qiangSec - 2);
+          return {
+            tag: '🏃 秒數快慢比較',
+            text: `短跑比賽：小明跑了 1 分 ${pad2(mingExtra)} 秒，小華跑了 ${huaSec} 秒，小強跑了 ${qiangSec} 秒。請問誰跑得最快？`,
+            options: shuffleArray([
+              `小華（${huaSec} 秒）`,
+              `小明（1 分 ${pad2(mingExtra)} 秒）`,
+              `小強（${qiangSec} 秒）`,
+              '三人一樣快'
+            ]),
+            answer: `小華（${huaSec} 秒）`,
+            method1: `【統一單位法】先把小明的 1 分 ${pad2(mingExtra)} 秒換算成 60 + ${mingExtra} = ${mingTotal} 秒。三人成績分別是 ${mingTotal} 秒、${huaSec} 秒、${qiangSec} 秒。`,
+            method2: `【賽跑常識法】賽跑時「花的時間越少，代表跑得越快」！比較 ${mingTotal}、${huaSec}、${qiangSec}，最小的是 ${huaSec} 秒，所以小華最快。`
+          };
+        }));
+
+        // 題型 5：紅綠燈倒數秒數差
+        questions.push(createNonRepeatingQuestion(islandId, 'q5', () => {
+          const waitTotal = randInt(75, 115);
+          const waited = randInt(12, waitTotal - 62); // 確保剩餘超過 60 秒
+          const remain = waitTotal - waited;
+          const remM = Math.floor(remain / 60);
+          const remS = remain % 60;
+          const ansStr = `${remM} 分 ${remS} 秒`;
+          return {
+            tag: '🚦 生活秒數應用',
+            text: `路口行人紅燈總共要等 ${waitTotal} 秒，已經過了 ${waited} 秒，還需要再等幾分幾秒才變綠燈？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${remM + 1} 分 ${remS} 秒`, `${remM} 分 ${(remS + 10) % 60} 秒`, `0 分 ${remain} 秒`],
+              (g) => `${remM} 分 ${(remS + g * 7) % 59 + 1} 秒`
+            ),
+            answer: ansStr,
+            method1: `【先減後換法】先算還剩下幾秒：${waitTotal} - ${waited} = ${remain} 秒；再把 ${remain} 秒除以 60，換成 ${remM} 分 ${remS} 秒。`,
+            method2: `【湊整分鐘法】60 秒就是 1 分鐘，${remain} 秒比 60 秒多了 ${remain - 60} 秒，所以是 ${remM} 分 ${remS} 秒。`
+          };
+        }));
+
+        // 題型 6：幾分半鐘與一刻鐘秒數
+        questions.push(createNonRepeatingQuestion(islandId, 'q6', () => {
+          const halfMins = randInt(1, 5);
+          const ansSec = halfMins * 60 + 30;
+          return {
+            tag: '⏱️ 常見時間秒數',
+            text: `刷牙或計時挑戰規定要持續「${halfMins} 分半鐘」，請問 ${halfMins} 分半鐘一共是多少秒？`,
+            options: buildUniqueOptions(
+              `${ansSec} 秒`,
+              [`${halfMins * 60} 秒`, `${halfMins * 100 + 30} 秒`, `${ansSec + 30} 秒`],
+              (g) => `${ansSec + g * 15} 秒`
+            ),
+            answer: `${ansSec} 秒`,
+            method1: `【分步拆解法】${halfMins} 分鐘 = ${halfMins} × 60 = ${halfMins * 60} 秒；「半分鐘」是 60 ÷ 2 = 30 秒。合起來 ${halfMins * 60} + 30 = ${ansSec} 秒。`,
+            method2: `【數線累加法】把 ${halfMins} 個 60 秒加起來，再加上半分鐘（30 秒），共 ${ansSec} 秒。`
+          };
+        }));
+      }
+
+      else if (islandId === 'island_2') {
+        // --- 島嶼 2：12小時制與24小時報時制互轉 ---
+        // 題型 1：下午轉 24 小時制
+        questions.push(createNonRepeatingQuestion(islandId, 'q1', () => {
+          const pmHour = randInt(1, 11);
+          const pmMin = randInt(5, 55);
+          const h24 = pmHour + 12;
+          const period = '下午';
+          const eventName = pickOne(['足球比賽', '音樂演奏會', '魔術表演秀', '籃球友誼賽']);
+          return {
+            tag: '🕰️ 12小時制 ➔ 24小時制',
+            text: `${eventName}在「${period} ${pmHour} 時 ${pad2(pmMin)} 分」開始，用 24 小時報時制表示是何時？`,
+            options: buildUniqueOptions(
+              `${h24}:${pad2(pmMin)}`,
+              [`${pad2(pmHour)}:${pad2(pmMin)}`, `${(h24 + 2) % 24}:${pad2(pmMin)}`, `${pmHour + 10}:${pad2(pmMin)}`],
+              (g) => `${h24}:${pad2((pmMin + g * 11) % 60)}`
+            ),
+            answer: `${h24}:${pad2(pmMin)}`,
+            method1: `【加 12 法則】${period}的時間（1時～11時）轉換成 24 小時制時，「小時要加 12，分鐘不變」：${pmHour} + 12 = ${h24}，所以是 ${h24}:${pad2(pmMin)}。`,
+            method2: `【時鐘第二圈法】下午 12 時之後時針走第二圈，12 接著數 ${pmHour} 小時就是 ${h24} 時。`
+          };
+        }));
+
+        // 題型 2：24 小時制轉 12 小時制（統一用下午）
+        questions.push(createNonRepeatingQuestion(islandId, 'q2', () => {
+          const h24 = randInt(13, 23);
+          const m24 = randInt(5, 55);
+          const h12 = h24 === 12 ? 12 : h24 - 12;
+          const label = '下午';
+          const ansStr = `${label} ${h12} 時 ${pad2(m24)} 分`;
+          return {
+            tag: '🌙 24小時制 ➔ 12小時制',
+            text: `火車站電子看板顯示列車發車時間為「${h24}:${pad2(m24)}」，也就是 12 小時制的什麼時間？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [
+                `上午 ${h12} 時 ${pad2(m24)} 分`,
+                `${label} ${h12 === 11 ? 9 : h12 + 2} 時 ${pad2(m24)} 分`,
+                `${label} ${h24 - 10} 時 ${pad2(m24)} 分`
+              ],
+              (g) => `${label} ${((h12 + g) % 11) + 1} 時 ${pad2(m24)}`
+            ),
+            answer: ansStr,
+            method1: `【減 12 法則】看到 24 小時制的小時大於 12（如 ${h24}），代表已經過了下午 12 時，把小時減去 12：${h24} - 12 = ${h12}，並加上「${label}」。`,
+            method2: `【時段對照法】12:00 是下午 12 時，${h24}:${pad2(m24)} 再往後推 ${h12} 小時，就是${ansStr}。`
+          };
+        }));
+
+        // 題型 3：上午時間轉換（容易誤加12的陷阱題）
+        questions.push(createNonRepeatingQuestion(islandId, 'q3', () => {
+          const amHour = randInt(1, 11);
+          const amMin = randInt(10, 50);
+          const act = pickOne(['學校早會時間', '晨泳訓練集合', '早班渡輪開船', '公園太極拳活動']);
+          return {
+            tag: '☀️ 上午報時制辨析',
+            text: `${act}是「上午 ${amHour} 時 ${pad2(amMin)} 分」，用 24 小時報時制應該寫成？`,
+            options: buildUniqueOptions(
+              `${pad2(amHour)}:${pad2(amMin)}`,
+              [`${amHour + 12}:${pad2(amMin)}`, `12:${pad2(amMin)}`, `${amHour + 10}:${pad2(amMin)}`],
+              (g) => `${pad2(amHour)}:${pad2((amMin + g * 12) % 60)}`
+            ),
+            answer: `${pad2(amHour)}:${pad2(amMin)}`,
+            method1: `【上午不變法則】「上午」是每天的第一圈（00:00～11:59），轉換成 24 小時制時不需要加 12，直接寫成 ${pad2(amHour)}:${pad2(amMin)} 即可！`,
+            method2: `【關鍵字檢查】看到「下午」才加 12；看到「上午」小時保持原樣。`
+          };
+        }));
+
+        // 題型 4：特殊時刻：上午 12 時與下午 12 時辨析
+        questions.push(createNonRepeatingQuestion(islandId, 'q4', () => {
+          const isAm12 = Math.random() < 0.5;
+          const min4 = randInt(5, 50);
+          if (isAm12) {
+            return {
+              tag: '🕛 特殊時刻：上午與下午 12 時',
+              text: `跨年煙火與新的一天在「上午 12 時 ${pad2(min4)} 分」開始，用 24 小時報時制表示這個時刻是？`,
+              options: buildUniqueOptions(`00:${pad2(min4)}`, [`12:${pad2(min4)}`, `24:${pad2(min4)}`, `10:${pad2(min4)}`], (g) => `0${g}:${pad2(min4)}`),
+              answer: `00:${pad2(min4)}`,
+              method1: `【新的一天起點】上午 12 時代表舊的一天結束、新的一天重新從「00」開始計算，所以上午 12 時 ${pad2(min4)} 分是 00:${pad2(min4)}。`,
+              method2: `【下午對比法】「下午 12 時 ${pad2(min4)} 分」才是 12:${pad2(min4)}；「上午 12 時 ${pad2(min4)} 分」則是 00:${pad2(min4)}。`
+            };
+          } else {
+            return {
+              tag: '🕛 特殊時刻：上午與下午 12 時',
+              text: `學校營養午餐在「下午 12 時 ${pad2(min4)} 分」開始享用，用 24 小時報時制表示這個時刻是？`,
+              options: buildUniqueOptions(`12:${pad2(min4)}`, [`00:${pad2(min4)}`, `24:${pad2(min4)}`, `02:${pad2(min4)}`], (g) => `1${g}:${pad2(min4)}`),
+              answer: `12:${pad2(min4)}`,
+              method1: `【下午 12 時不加 12】下午 12 時正是一天第 12 個小時的結束，24 小時制直接寫成 12:${pad2(min4)}，不需要再加 12 變成 24 喔！`,
+              method2: `【上午對比法】「上午 12 時 ${pad2(min4)} 分」才是 00:${pad2(min4)}；「下午 12 時 ${pad2(min4)} 分」則是 12:${pad2(min4)}。`
+            };
+          }
+        }));
+
+        // 題型 5：商場/圖書館營業時間判斷
+        questions.push(createNonRepeatingQuestion(islandId, 'q5', () => {
+          const close24 = randInt(19, 21); // 19:30 ~ 21:30
+          const arrivePm = randInt(6, 10); // 下午 6 ~ 10 時（相當於 18:00 ~ 22:00）
+          const arrive24 = arrivePm + 12;
+          const arriveMin = randInt(15, 45);
+          const isOpen = (arrive24 * 60 + arriveMin) < (close24 * 60 + 30);
+          const ansText = isOpen
+            ? `還在開放（下午 ${arrivePm} 時 ${pad2(arriveMin)} 分 = ${arrive24}:${pad2(arriveMin)} 早於 ${close24}:30）`
+            : `已經閉館（下午 ${arrivePm} 時 ${pad2(arriveMin)} 分 = ${arrive24}:${pad2(arriveMin)} 晚於 ${close24}:30）`;
+          return {
+            tag: '🏬 生活報時制應用',
+            text: `圖書館的開放時間是「上午 09:30 至 ${close24}:30」。請問小美在「下午 ${arrivePm} 時 ${pad2(arriveMin)} 分」到達圖書館時，圖書館還在開放嗎？`,
+            options: shuffleArray([
+              `還在開放（下午 ${arrivePm} 時 ${pad2(arriveMin)} 分 = ${arrive24}:${pad2(arriveMin)} 早於 ${close24}:30）`,
+              `已經閉館（下午 ${arrivePm} 時 ${pad2(arriveMin)} 分 = ${arrive24}:${pad2(arriveMin)} 晚於 ${close24}:30）`,
+              '尚未開館（早於上午 09:30）',
+              '剛好在中午休息時間'
+            ]),
+            answer: ansText,
+            method1: `【統一成 24 小時制】下午 ${arrivePm} 時 ${pad2(arriveMin)} 分 = ${arrivePm} + 12 = ${arrive24}:${pad2(arriveMin)}。閉館時間是 ${close24}:30，兩者一比就知道答案了！`,
+            method2: `【統一成 12 小時制】把閉館時間 ${close24}:30 減 12 變成「下午 ${close24 - 12} 時 30 分」，再和下午 ${arrivePm} 時 ${pad2(arriveMin)} 分比較早晚。`
+          };
+        }));
+
+        // 題型 6：時間先後排序
+        questions.push(createNonRepeatingQuestion(islandId, 'q6', () => {
+          const latePm = randInt(9, 11);
+          const lateMin = randInt(10, 50);
+          const ansStr = `下午 ${latePm} 時 ${pad2(lateMin)} 分`;
+          const mid24 = `下午 ${latePm - 2} 時 ${pad2((lateMin + 15) % 60)} 分`;
+          const earlyPm = `下午 ${randInt(1, 4)} 時 ${pad2(randInt(10, 50))} 分`;
+          const noon24 = `下午 1 時 ${pad2(randInt(10, 50))} 分`;
+          return {
+            tag: '📊 同一天時刻先後',
+            text: `在同一天內，下面哪一個時刻「最晚」發生？`,
+            options: shuffleArray([ansStr, mid24, earlyPm, noon24]),
+            answer: ansStr,
+            method1: `【全部轉 24 小時制比較】下午 ${latePm} 時 ${pad2(lateMin)} 分 = ${latePm + 12}:${pad2(lateMin)}，是四個選項中數字最大的時刻！`,
+            method2: `【時段分組法】先挑出較後的時間，比較後顯然${ansStr}最晚。`
+          };
+        }));
+      }
+
+      else if (islandId === 'island_3') {
+        // --- 島嶼 3：計算時間間隔（經過時間） ---
+        // 題型 1：不借位的整點與分鐘差
+        questions.push(createNonRepeatingQuestion(islandId, 'q1', () => {
+          const sh1 = randInt(8, 12);
+          const sm1 = randInt(5, 25);
+          const dh1 = randInt(1, 3);
+          const dm1 = randInt(12, 32);
+          const eh1 = sh1 + dh1;
+          const em1 = sm1 + dm1;
+          const ansStr = `${dh1} 小時 ${dm1} 分鐘`;
+          return {
+            tag: '⏳ 經過時間（直接相減）',
+            text: `自然科學展覽從 ${pad2(sh1)}:${pad2(sm1)} 開始，到 ${pad2(eh1)}:${pad2(em1)} 結束，這場展覽共持續了多長時間？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${dh1 + 1} 小時 ${dm1} 分鐘`, `${dh1} 小時 ${dm1 + 10} 分鐘`, `${Math.max(1, dh1 - 1)} 小時 ${dm1} 分鐘`],
+              (g) => `${dh1} 小時 ${(dm1 + g * 7) % 55 + 1} 分鐘`
+            ),
+            answer: ansStr,
+            method1: `【時減時、分減分】結束時間減去開始時間：小時 ${eh1} - ${sh1} = ${dh1} 小時；分鐘 ${em1} - ${sm1} = ${dm1} 分鐘。`,
+            method2: `【分段推進法】從 ${pad2(sh1)}:${pad2(sm1)} 經過 ${dh1} 小時是 ${pad2(eh1)}:${pad2(sm1)}，再經過 ${dm1} 分鐘就到 ${pad2(eh1)}:${pad2(em1)}。`
+          };
+        }));
+
+        // 題型 2：需要退位（借 1 小時 = 60 分鐘）的時間間隔
+        questions.push(createNonRepeatingQuestion(islandId, 'q2', () => {
+          const sh2 = randInt(8, 14);
+          const sm2 = randInt(35, 52);
+          const addHours = randInt(2, 3);
+          const eh2 = sh2 + addHours;
+          const em2 = randInt(10, 28);
+          const totalMins2 = (eh2 * 60 + em2) - (sh2 * 60 + sm2);
+          const ansH2 = Math.floor(totalMins2 / 60);
+          const ansM2 = totalMins2 % 60;
+          const ansStr = `${ansH2} 小時 ${ansM2} 分鐘`;
+          return {
+            tag: '⏳ 經過時間（湊整點法）',
+            text: `爸爸開車從 ${pad2(sh2)}:${pad2(sm2)} 出發，在 ${pad2(eh2)}:${pad2(em2)} 抵達外婆家，車程一共花了多少時間？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${addHours} 小時 ${sm2 - em2} 分鐘`, `${ansH2 + 1} 小時 ${ansM2} 分鐘`, `${ansH2} 小時 ${(ansM2 + 10) % 60} 分鐘`],
+              (g) => `${ansH2} 小時 ${(ansM2 + g * 8) % 58 + 1} 分鐘`
+            ),
+            answer: ansStr,
+            method1: `【分段湊整點法】① 先從 ${pad2(sh2)}:${pad2(sm2)} 湊到整點 ${pad2(sh2 + 1)}:00，經過 ${60 - sm2} 分鐘；② 再從 ${pad2(sh2 + 1)}:00 到 ${pad2(eh2)}:${pad2(em2)}，經過 ${eh2 - sh2 - 1} 小時 ${em2} 分鐘；③ 合起來是 ${ansStr}。`,
+            method2: `【直式借位減法】分鐘 ${em2} 不夠減 ${sm2}，向小時借 1 小時變 60 分鐘：(${em2} + 60) - ${sm2} = ${ansM2} 分鐘；小時 (${eh2} - 1) - ${sh2} = ${ansH2} 小時。`
+          };
+        }));
+
+        // 題型 3：橫跨上午與下午的時間間隔
+        questions.push(createNonRepeatingQuestion(islandId, 'q3', () => {
+          const amH = randInt(9, 11);
+          const amM = randInt(25, 50);
+          const pmH = randInt(1, 3);
+          const pmM = randInt(10, 40);
+          const diffMins = ((pmH + 12) * 60 + pmM) - (amH * 60 + amM);
+          const ansH = Math.floor(diffMins / 60);
+          const ansM = diffMins % 60;
+          const ansStr = `${ansH} 小時 ${ansM} 分鐘`;
+          return {
+            tag: '🌞 跨中午時間間隔',
+            text: `遊樂園海豚表演與體驗營從「上午 ${amH} 時 ${pad2(amM)} 分」開始，到「下午 ${pmH} 時 ${pad2(pmM)} 分」結束，一共經過了多少時間？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${ansH + 1} 小時 ${ansM} 分鐘`, `${ansH} 小時 ${(ansM + 10) % 60} 分鐘`, `${Math.max(1, ansH - 1)} 小時 ${ansM} 分鐘`],
+              (g) => `${ansH} 小時 ${(ansM + g * 9) % 58 + 1} 分鐘`
+            ),
+            answer: ansStr,
+            method1: `【轉 24 小時制計算】下午 ${pmH} 時 ${pad2(pmM)} 分 = ${pmH + 12}:${pad2(pmM)}。減去 ${pad2(amH)}:${pad2(amM)}，得出 ${ansStr}！`,
+            method2: `【12 時分界法】上午 ${amH}:${pad2(amM)} 到中午 12:00 經過 ${11 - amH} 小時 ${60 - amM} 分；中午 12:00 到下午 ${pmH}:${pad2(pmM)} 經過 ${pmH} 小時 ${pmM} 分；相加得 ${ansStr}。`
+          };
+        }));
+
+        // 題型 4：同一小時內的分鐘差
+        questions.push(createNonRepeatingQuestion(islandId, 'q4', () => {
+          const hour4 = randInt(15, 19);
+          const startM4 = randInt(8, 24);
+          const endM4 = randInt(42, 58);
+          const diff4 = endM4 - startM4;
+          return {
+            tag: '📝 同一小時內間隔',
+            text: `小芳從 ${pad2(hour4)}:${pad2(startM4)} 開始寫數學作業，寫完時鐘面顯示 ${pad2(hour4)}:${pad2(endM4)}，她寫作業花了多少分鐘？`,
+            options: buildUniqueOptions(
+              `${diff4} 分鐘`,
+              [`${diff4 + 10} 分鐘`, `${endM4 + startM4} 分鐘`, `${diff4 - 5} 分鐘`],
+              (g) => `${diff4 + g * 6} 分鐘`
+            ),
+            answer: `${diff4} 分鐘`,
+            method1: `【同小時直接相減】因為小時都是 ${pad2(hour4)} 時，只要把結束的分鐘減去開始的分鐘：${endM4} - ${startM4} = ${diff4} 分鐘。`,
+            method2: `【數線跳躍法】從 ${startM4} 分先跳整十數，再補上零頭，總共經過 ${diff4} 分鐘。`
+          };
+        }));
+
+        // 題型 5：游泳訓練間隔（換成總分鐘數）
+        questions.push(createNonRepeatingQuestion(islandId, 'q5', () => {
+          const sh5 = randInt(14, 17);
+          const sm5 = randInt(15, 45);
+          const dur5 = randInt(65, 95);
+          const endTotal = sh5 * 60 + sm5 + dur5;
+          const eh5 = Math.floor(endTotal / 60);
+          const em5 = endTotal % 60;
+          return {
+            tag: '🏊 經過時間換算分鐘',
+            text: `游泳隊下午從 ${pad2(sh5)}:${pad2(sm5)} 練習到 ${pad2(eh5)}:${pad2(em5)}，請問一共練習了多少「分鐘」？`,
+            options: buildUniqueOptions(
+              `${dur5} 分鐘`,
+              [`${dur5 - 10} 分鐘`, `${dur5 + 10} 分鐘`, `${dur5 + 40} 分鐘`],
+              (g) => `${dur5 + g * 15} 分鐘`
+            ),
+            answer: `${dur5} 分鐘`,
+            method1: `【先算幾時幾分再換分鐘】從 ${pad2(sh5)}:${pad2(sm5)} 到 ${pad2(eh5)}:${pad2(em5)} 經過 1 小時 ${dur5 - 60} 分鐘，1 小時 = 60 分，60 + ${dur5 - 60} = ${dur5} 分鐘。`,
+            method2: `【湊整點法】先算到 ${pad2(sh5 + 1)}:00 是 ${60 - sm5} 分鐘，再加上 ${em5} 分鐘，${60 - sm5} + ${em5} = ${dur5} 分鐘。`
+          };
+        }));
+
+        // 題型 6：高鐵行車時間
+        questions.push(createNonRepeatingQuestion(islandId, 'q6', () => {
+          const sh6 = randInt(7, 11);
+          const sm6 = randInt(40, 55);
+          const dur6 = randInt(80, 115); // 1時20分 ~ 1時55分
+          const endTotal6 = sh6 * 60 + sm6 + dur6;
+          const eh6 = Math.floor(endTotal6 / 60);
+          const em6 = endTotal6 % 60;
+          const ansH6 = Math.floor(dur6 / 60);
+          const ansM6 = dur6 % 60;
+          const ansStr = `${ansH6} 小時 ${ansM6} 分鐘`;
+          return {
+            tag: '🚄 交通時刻表間隔',
+            text: `高速列車 ${pad2(sh6)}:${pad2(sm6)} 從起點站出發，${pad2(eh6)}:${pad2(em6)} 抵達終點站，這班列車行駛了多長時間？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${ansH6 + 1} 小時 ${ansM6} 分鐘`, `${ansH6} 小時 ${(ansM6 + 10) % 60} 分鐘`, `${ansH6 + 1} 小時 ${Math.max(5, ansM6 - 10)} 分鐘`],
+              (g) => `${ansH6} 小時 ${(ansM6 + g * 7) % 58 + 1} 分鐘`
+            ),
+            answer: ansStr,
+            method1: `【先加整小時法】${pad2(sh6)}:${pad2(sm6)} 經過 1 小時是 ${pad2(sh6 + 1)}:${pad2(sm6)}；再到 ${pad2(eh6)}:${pad2(em6)} 多了 ${ansM6} 分鐘，總計 ${ansStr}。`,
+            method2: `【湊整點相加法】${pad2(sh6)}:${pad2(sm6)} 到 ${pad2(sh6 + 1)}:00 是 ${60 - sm6} 分鐘，加上 ${pad2(sh6 + 1)}:00 到 ${pad2(eh6)}:${pad2(em6)} 的時間，得 ${ansStr}。`
+          };
+        }));
+      }
+
+      else if (islandId === 'island_4') {
+        // --- 島嶼 4：推算「結束時間」與「開始時間」 ---
+        // 題型 1：已知開始時間 + 經過時間 = 結束時間（進位）
+        questions.push(createNonRepeatingQuestion(islandId, 'q1', () => {
+          const sh1 = randInt(13, 17);
+          const sm1 = randInt(32, 52);
+          const addM1 = randInt(28, 48);
+          const total1 = sh1 * 60 + sm1 + addM1;
+          const eh1 = Math.floor(total1 / 60);
+          const em1 = total1 % 60;
+          const ansStr = `${pad2(eh1)}:${pad2(em1)}`;
+          return {
+            tag: '🎬 推算結束時間',
+            text: `動畫電影在 ${pad2(sh1)}:${pad2(sm1)} 開始播放，片長 ${addM1} 分鐘，請問電影在什麼時候結束？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${pad2(eh1 + 1)}:${pad2(em1)}`, `${pad2(eh1)}:${pad2((em1 + 10) % 60)}`, `${pad2(sh1)}:${pad2((em1 + 20) % 60)}`],
+              (g) => `${pad2(eh1)}:${pad2((em1 + g * 7) % 60)}`
+            ),
+            answer: ansStr,
+            method1: `【滿 60 進 1 小時法】分鐘相加：${sm1} + ${addM1} = ${sm1 + addM1} 分鐘。因為 60 分鐘 = 1 小時，進位 1 小時變成 ${eh1} 時，剩下 ${em1} 分，答案是 ${ansStr}。`,
+            method2: `【分段湊整點法】${pad2(sh1)}:${pad2(sm1)} 先過 ${60 - sm1} 分到 ${pad2(eh1)}:00，再過剩下的 ${addM1 - (60 - sm1)} 分就是 ${ansStr}。`
+          };
+        }));
+
+        // 題型 2：已知開始時間 + 幾小時幾分 = 結束時間
+        questions.push(createNonRepeatingQuestion(islandId, 'q2', () => {
+          const sh2 = randInt(1, 4);
+          const sm2 = randInt(30, 50);
+          const dh2 = randInt(1, 3);
+          const dm2 = randInt(25, 45);
+          const total2 = sh2 * 60 + sm2 + dh2 * 60 + dm2;
+          const eh2 = Math.floor(total2 / 60);
+          const em2 = total2 % 60;
+          const ansStr = `下午 ${eh2} 時 ${pad2(em2)} 分`;
+          return {
+            tag: '🎂 派對結束時間',
+            text: `生日派對在下午 ${sh2} 時 ${pad2(sm2)} 分開始，進行了 ${dh2} 小時 ${dm2} 分鐘，請問派對在下午幾時幾分結束？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [
+                `下午 ${sh2 + dh2} 時 ${sm2 + dm2} 分`,
+                `下午 ${eh2 - 1} 時 ${pad2(em2)} 分`,
+                `下午 ${eh2} 時 ${pad2((em2 + 15) % 60)} 分`
+              ],
+              (g) => `下午 ${eh2} 時 ${pad2((em2 + g * 8) % 60)} 分`
+            ),
+            answer: ansStr,
+            method1: `【先加小時、再加分鐘】下午 ${sh2} 時 ${pad2(sm2)} 分 ＋ ${dh2} 小時 ＝ 下午 ${sh2 + dh2} 時 ${pad2(sm2)} 分；再加上 ${dm2} 分鐘並滿 60 進位，就是 ${ansStr}！`,
+            method2: `【湊整點推進法】先補滿整點再加剩餘分鐘，算出結束時刻為 ${ansStr}。`
+          };
+        }));
+
+        // 題型 3：已知結束時間 - 經過時間 = 開始時間（需退位）
+        questions.push(createNonRepeatingQuestion(islandId, 'q3', () => {
+          const eh3 = randInt(10, 16);
+          const em3 = randInt(8, 25);
+          const subM3 = randInt(32, 52);
+          const total3 = eh3 * 60 + em3 - subM3;
+          const sh3 = Math.floor(total3 / 60);
+          const sm3 = total3 % 60;
+          const ansStr = `${pad2(sh3)}:${pad2(sm3)}`;
+          return {
+            tag: '🚌 倒推開始（出發）時間',
+            text: `校外教學巴士在 ${pad2(eh3)}:${pad2(em3)} 準時抵達動物園，已知車程花了 ${subM3} 分鐘，請問巴士是幾點從學校出發的？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${pad2(eh3)}:${pad2(subM3 - em3)}`, `${pad2(sh3 - 1)}:${pad2(sm3)}`, `${pad2(sh3)}:${pad2((sm3 + 15) % 60)}`],
+              (g) => `${pad2(sh3)}:${pad2((sm3 + g * 9) % 60)}`
+            ),
+            answer: ansStr,
+            method1: `【倒退過整點法】從 ${pad2(eh3)}:${pad2(em3)} 往回退 ${em3} 分鐘回到整點 ${pad2(eh3)}:00；還要再往回退 ${subM3 - em3} 分鐘，60 - ${subM3 - em3} = ${sm3} 分，所以是 ${ansStr}。`,
+            method2: `【借位減法】向 ${eh3} 時借 1 小時變 60 分：(${em3} + 60) - ${subM3} = ${sm3} 分，小時剩 ${sh3} 時，即 ${ansStr}。`
+          };
+        }));
+
+        // 題型 4：烘焙蛋糕倒推開始時間（含小時與分鐘）
+        questions.push(createNonRepeatingQuestion(islandId, 'q4', () => {
+          const eh4 = randInt(16, 20);
+          const em4 = randInt(5, 25);
+          const dh4 = randInt(1, 2);
+          const dm4 = randInt(30, 50);
+          const total4 = eh4 * 60 + em4 - (dh4 * 60 + dm4);
+          const sh4 = Math.floor(total4 / 60);
+          const sm4 = total4 % 60;
+          const ansStr = `${pad2(sh4)}:${pad2(sm4)}`;
+          return {
+            tag: '🍰 倒推開始時間應用',
+            text: `媽媽想在 ${pad2(eh4)}:${pad2(em4)} 讓烤雞出爐，烤雞需要烘烤 ${dh4} 小時 ${dm4} 分鐘，媽媽最晚必須在什麼時候把烤雞放進烤箱？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${pad2(sh4 + 1)}:${pad2(sm4)}`, `${pad2(sh4)}:${pad2((sm4 + 20) % 60)}`, `${pad2(eh4 - dh4)}:${pad2(dm4 - em4)}`],
+              (g) => `${pad2(sh4)}:${pad2((sm4 + g * 11) % 60)}`
+            ),
+            answer: ansStr,
+            method1: `【先減小時、再減分鐘】${pad2(eh4)}:${pad2(em4)} 往回推 ${dh4} 小時，再往回退 ${dm4} 分鐘（借 1 小時變 60 分），得出 ${ansStr}！`,
+            method2: `【借位直式法】(${eh4} - 1) 時 (${em4} + 60) 分 － ${dh4} 時 ${dm4} 分 ＝ ${ansStr}。`
+          };
+        }));
+
+        // 題型 5：提早到車站問題
+        questions.push(createNonRepeatingQuestion(islandId, 'q5', () => {
+          const eh5 = randInt(8, 14);
+          const em5 = randInt(5, 20);
+          const early5 = randInt(25, 45);
+          const total5 = eh5 * 60 + em5 - early5;
+          const sh5 = Math.floor(total5 / 60);
+          const sm5 = total5 % 60;
+          const ansStr = `${pad2(sh5)}:${pad2(sm5)}`;
+          return {
+            tag: '🚉 提早出發應用題',
+            text: `火車在 ${pad2(eh5)}:${pad2(em5)} 開車，旅客必須在開車前 ${early5} 分鐘到達月台驗票，請問旅客最晚幾點要到達月台？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${pad2(sh5)}:${pad2((sm5 + 10) % 60)}`, `${pad2(eh5)}:${pad2(em5 + early5 > 59 ? 55 : em5 + early5)}`, `${pad2(sh5 - 1)}:${pad2(sm5)}`],
+              (g) => `${pad2(sh5)}:${pad2((sm5 + g * 7) % 60)}`
+            ),
+            answer: ansStr,
+            method1: `【倒推湊整點法】從 ${pad2(eh5)}:${pad2(em5)} 往回減 ${em5} 分鐘是 ${pad2(eh5)}:00，還要再減 ${early5 - em5} 分鐘，60 - ${early5 - em5} = ${sm5} 分，所以是 ${ansStr}。`,
+            method2: `【關鍵字辨析】「開車前 ${early5} 分鐘」代表比 ${pad2(eh5)}:${pad2(em5)} 更早，要用減法計算。`
+          };
+        }));
+
+        // 題型 6：兩節課加下課的結束時間
+        questions.push(createNonRepeatingQuestion(islandId, 'q6', () => {
+          const sh6 = randInt(8, 10);
+          const sm6 = randInt(10, 30);
+          const classLen = pickOne([35, 40, 45]);
+          const breakLen = pickOne([10, 15]);
+          const totalDur = classLen * 2 + breakLen;
+          const endTotal = sh6 * 60 + sm6 + totalDur;
+          const eh6 = Math.floor(endTotal / 60);
+          const em6 = endTotal % 60;
+          const ansStr = `${pad2(eh6)}:${pad2(em6)}`;
+          return {
+            tag: '🏫 連續活動結束時間',
+            text: `上午第一節課 ${pad2(sh6)}:${pad2(sm6)} 開始，每節課 ${classLen} 分鐘，中間下課休息 ${breakLen} 分鐘，請問第二節課什麼時候下課？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${pad2(eh6)}:${pad2((em6 + 10) % 60)}`, `${pad2(eh6)}:${pad2((em6 + 50) % 60)}`, `${pad2(eh6 - 1)}:${pad2(em6)}`],
+              (g) => `${pad2(eh6)}:${pad2((em6 + g * 15) % 60)}`
+            ),
+            answer: ansStr,
+            method1: `【總經過時間加總法】兩節課共 ${classLen} + ${classLen} = ${classLen * 2} 分鐘，加上休息 ${breakLen} 分鐘，總共經過 ${totalDur} 分鐘。${pad2(sh6)}:${pad2(sm6)} 加上 ${totalDur} 分鐘 = ${ansStr}。`,
+            method2: `【時間軸逐步推進】第一節下課是 ${pad2(Math.floor((sh6 * 60 + sm6 + classLen) / 60))}:${pad2((sm6 + classLen) % 60)}，加上休息 ${breakLen} 分和第二節 ${classLen} 分，得 ${ansStr}。`
+          };
+        }));
+      }
+
+      else if (islandId === 'island_5') {
+        // --- 島嶼 5：時間神殿（綜合應用題與終極 Boss 戰，全部動態出題） ---
+        // 題型 1：轉車與等待時間
+        questions.push(createNonRepeatingQuestion(islandId, 'q1', () => {
+          const sh1 = randInt(1, 4); // 下午 1~4 時
+          const sm1 = randInt(10, 35);
+          const walkM = randInt(10, 18);
+          const waitM = randInt(6, 14);
+          const busM = randInt(25, 38);
+          const sumM = walkM + waitM + busM;
+          const startTotal = (sh1 + 12) * 60 + sm1;
+          const endTotal = startTotal + sumM;
+          const eh24 = Math.floor(endTotal / 60);
+          const em1 = endTotal % 60;
+          const ansStr = `下午 ${eh24 - 12} 時 ${pad2(em1)} 分`;
+          return {
+            tag: '👑 綜合挑戰 1：轉車與等待時間',
+            text: `永光小伙子在「下午 ${sh1} 時 ${pad2(sm1)} 分」從家裡出發，走路 ${walkM} 分鐘到公車站，等了 ${waitM} 分鐘公車才來，又搭了 ${busM} 分鐘的車到達書店，請問他在下午幾時幾分到達書店？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`下午 ${eh24 - 12} 時 ${pad2((em1 + 10) % 60)} 分`, `下午 ${eh24 - 12} 時 ${pad2((em1 + 50) % 60)} 分`, `下午 ${Math.max(1, eh24 - 13)} 時 ${pad2(em1)} 分`],
+              (g) => `下午 ${eh24 - 12} 時 ${pad2((em1 + g * 7) % 60)} 分`
+            ),
+            answer: ansStr,
+            method1: `【總花費分鐘合併法】把所有路程與等待時間加起來：${walkM} + ${waitM} + ${busM} = ${sumM} 分鐘。下午 ${sh1} 時 ${pad2(sm1)} 分 加上 ${sumM} 分鐘 = ${ansStr}！`,
+            method2: `【分段推進法】先加走路與等車共 ${walkM + waitM} 分鐘，再加上搭車 ${busM} 分鐘，得出 ${ansStr}。`
+          };
+        }));
+
+        // 題型 2：跨午夜時間計算
+        questions.push(createNonRepeatingQuestion(islandId, 'q2', () => {
+          const nightPm = randInt(9, 11); // 下午 9~11 時（相當於 21~23 時）
+          const night24 = nightPm + 12;
+          const nightMin = randInt(20, 50);
+          const nextH = randInt(1, 3);
+          const nextMin = randInt(10, 45);
+          const totalMins = (24 * 60 - (night24 * 60 + nightMin)) + (nextH * 60 + nextMin);
+          const ansH = Math.floor(totalMins / 60);
+          const ansM = totalMins % 60;
+          const ansStr = `${ansH} 小時 ${ansM} 分鐘`;
+          return {
+            tag: '👑 綜合挑戰 2：跨午夜時間計算',
+            text: `夜間長途巴士在「下午 ${nightPm} 時 ${pad2(nightMin)} 分（${night24}:${pad2(nightMin)}）」發車，於隔天「上午 ${nextH} 時 ${pad2(nextMin)} 分（0${nextH}:${pad2(nextMin)}）」抵達終點，這趟車程一共行駛了多長時間？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${ansH + 1} 小時 ${ansM} 分鐘`, `${ansH} 小時 ${(ansM + 10) % 60} 分鐘`, `${Math.max(1, ansH - 1)} 小時 ${ansM} 分鐘`],
+              (g) => `${ansH} 小時 ${(ansM + g * 9) % 58 + 1} 分鐘`
+            ),
+            answer: ansStr,
+            method1: `【午夜 24:00 分段法】① 第一天：從 ${night24}:${pad2(nightMin)} 到午夜 24:00，經過 ${23 - night24} 小時 ${60 - nightMin} 分；② 第二天：從 00:00 到 上午 ${nextH} 時 ${pad2(nextMin)} 分，經過 ${nextH} 小時 ${nextMin} 分；③ 相加得 ${ansStr}！`,
+            method2: `【補滿整點法】先湊滿 24:00 再加上隔天上午的時間，合計 ${ansStr}。`
+          };
+        }));
+
+        // 題型 3：含秒數的接力賽總時間
+        questions.push(createNonRepeatingQuestion(islandId, 'q3', () => {
+          const s1 = randInt(15, 35);
+          const s2 = randInt(20, 40);
+          const s3 = randInt(48, 59);
+          const totalSec = (60 + s1) + (60 + s2) + s3;
+          const ansM = Math.floor(totalSec / 60);
+          const ansS = totalSec % 60;
+          const ansStr = `${ansM} 分 ${ansS} 秒`;
+          return {
+            tag: '👑 綜合挑戰 3：含秒數的接力賽總時間',
+            text: `大隊接力比賽，第一棒跑了 1 分 ${s1} 秒，第二棒跑了 1 分 ${s2} 秒，第三棒跑了 ${s3} 秒，三棒一共跑了幾分幾秒？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${ansM - 1} 分 ${ansS} 秒`, `${ansM + 1} 分 ${ansS} 秒`, `2 分 ${s1 + s2 + s3} 秒`],
+              (g) => `${ansM} 分 ${(ansS + g * 8) % 58 + 1} 秒`
+            ),
+            answer: ansStr,
+            method1: `【分與秒分別相加再進位】分鐘：1 + 1 = 2 分；秒數：${s1} + ${s2} + ${s3} = ${s1 + s2 + s3} 秒。換算進位後總共 ${ansStr}！`,
+            method2: `【全部換成秒再換回分秒】總秒數 = ${60 + s1} + ${60 + s2} + ${s3} = ${totalSec} 秒，除以 60 得 ${ansStr}。`
+          };
+        }));
+
+        // 題型 4：機場報到時間倒推
+        questions.push(createNonRepeatingQuestion(islandId, 'q4', () => {
+          const pmH = randInt(3, 7);
+          const pmM = randInt(10, 35);
+          const h24 = pmH + 12;
+          const beforeH = 2;
+          const beforeM = randInt(25, 45);
+          const totalMins = h24 * 60 + pmM - (beforeH * 60 + beforeM);
+          const ansH = Math.floor(totalMins / 60);
+          const ansM = totalMins % 60;
+          const ansStr = `${pad2(ansH)}:${pad2(ansM)}`;
+          return {
+            tag: '👑 綜合挑戰 4：機場報到時間倒推',
+            text: `國際航班預計在「下午 ${pmH} 時 ${pad2(pmM)} 分」起飛，航空公司規定起飛前 ${beforeH} 小時 ${beforeM} 分鐘要抵達機場報到，請問最晚幾點（24小時制）要到機場？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${pad2(ansH + 1)}:${pad2(ansM)}`, `${pad2(ansH)}:${pad2((ansM + 20) % 60)}`, `${pad2(h24 + beforeH)}:${pad2(pmM)}`],
+              (g) => `${pad2(ansH)}:${pad2((ansM + g * 11) % 60)}`
+            ),
+            answer: ansStr,
+            method1: `【先轉 24 小時制再倒推】下午 ${pmH} 時 ${pad2(pmM)} 分 = ${h24}:${pad2(pmM)}。減去 ${beforeH} 小時 ${beforeM} 分鐘，得出 ${ansStr}！`,
+            method2: `【借位減法】(${h24} - 1) 時 (${pmM} + 60) 分 － ${beforeH} 時 ${beforeM} 分 ＝ ${ansStr}。`
+          };
+        }));
+
+        // 題型 5：時鐘快慢誤差題
+        questions.push(createNonRepeatingQuestion(islandId, 'q5', () => {
+          const fastMins = randInt(12, 25);
+          const showH24 = randInt(19, 22); // 相當於下午 7~10 時
+          const showM = randInt(5, fastMins - 2); // 確保需要向小時借位
+          const realTotal = showH24 * 60 + showM - fastMins;
+          const realH24 = Math.floor(realTotal / 60);
+          const realM = realTotal % 60;
+          const ansStr = `下午 ${realH24 - 12} 時 ${pad2(realM)} 分`;
+          return {
+            tag: '👑 綜合挑戰 5：時鐘快慢誤差題',
+            text: `客廳的時鐘比標準時間「快了 ${fastMins} 分鐘」，現在客廳時鐘顯示「下午 ${showH24 - 12} 時 ${pad2(showM)} 分（${showH24}:${pad2(showM)}）」，請問現在實際的標準時間是 12 小時制的幾時幾分？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [
+                `下午 ${showH24 - 12} 時 ${pad2(showM + fastMins)} 分`,
+                `下午 ${realH24 - 12} 時 ${pad2((realM + 10) % 60)} 分`,
+                `上午 ${realH24 - 12} 時 ${pad2(realM)} 分`
+              ],
+              (g) => `下午 ${realH24 - 12} 時 ${pad2((realM + g * 7) % 60)} 分`
+            ),
+            answer: ansStr,
+            method1: `【鐘快要減回來】時鐘「快了」${fastMins} 分鐘，代表標準時間比 ${showH24}:${pad2(showM)} 還要早 ${fastMins} 分鐘：${showH24}:${pad2(showM)} － ${fastMins} 分 ＝ ${realH24}:${pad2(realM)}。`,
+            method2: `【轉 12 小時制】${realH24}:${pad2(realM)} 換算為 12 小時制，就是「${ansStr}」。`
+          };
+        }));
+
+        // 題型 6：機器生產週期與秒數
+        questions.push(createNonRepeatingQuestion(islandId, 'q6', () => {
+          const perSec = pickOne([12, 15, 18, 20, 25]);
+          const count = randInt(7, 14);
+          const totalSec = perSec * count;
+          const ansM = Math.floor(totalSec / 60);
+          const ansS = totalSec % 60;
+          const ansStr = `${ansM} 分 ${pad2(ansS)} 秒`;
+          return {
+            tag: '👑 綜合挑戰 6：機器生產週期與秒數',
+            text: `一台餅乾包裝機每包餅乾需要 ${perSec} 秒鐘包裝，請問連續包裝 ${count} 包餅乾一共需要幾分幾秒？`,
+            options: buildUniqueOptions(
+              ansStr,
+              [`${ansM + 1} 分 ${pad2(ansS)} 秒`, `${Math.max(1, ansM - 1)} 分 ${pad2(ansS)} 秒`, `${ansM} 分 ${pad2((ansS + 15) % 60)} 秒`],
+              (g) => `${ansM} 分 ${pad2((ansS + g * 10) % 60)} 秒`
+            ),
+            answer: ansStr,
+            method1: `【先乘出總秒數再換算】${perSec} 秒 × ${count} 包 = ${totalSec} 秒。${totalSec} ÷ 60 = ${ansM}（分）⋯⋯ 餘 ${ansS}（秒），所以是 ${ansStr}。`,
+            method2: `【分組湊分鐘法】先算幾包剛好湊滿 60 秒（1 分鐘），再把剩下的包數換成秒，合計 ${ansStr}。`
+          };
+        }));
+
+        // 題型 7：終極魔王題：雙行程總時間比較
+        questions.push(createNonRepeatingQuestion(islandId, 'q7', () => {
+          const aStartH = randInt(7, 9);
+          const aStartM = randInt(15, 45);
+          const aDur = randInt(130, 165); // 2時10分 ~ 2時45分
+          const aEndTotal = aStartH * 60 + aStartM + aDur;
+          const aEndH = Math.floor(aEndTotal / 60);
+          const aEndM = aEndTotal % 60;
+
+          const extraDiff = pickOne([10, 15, 20, 25]);
+          const bIsLonger = Math.random() < 0.5;
+          const bDur = bIsLonger ? aDur + extraDiff : aDur - extraDiff;
+
+          const bStartH = randInt(13, 15);
+          const bStartM = randInt(15, 50);
+          const bEndTotal = bStartH * 60 + bStartM + bDur;
+          const bEndH = Math.floor(bEndTotal / 60);
+          const bEndM = bEndTotal % 60;
+
+          const winner = bIsLonger ? '乙火車' : '甲火車';
+          const loser = bIsLonger ? '甲火車' : '乙火車';
+          const ansStr = `${winner}比較長，長 ${extraDiff} 分鐘`;
+          return {
+            tag: '👑 終極魔王題：雙行程總時間比較',
+            text: `甲火車從 ${pad2(aStartH)}:${pad2(aStartM)} 開到 ${pad2(aEndH)}:${pad2(aEndM)}；乙火車從 ${pad2(bStartH)}:${pad2(bStartM)} 開到 ${pad2(bEndH)}:${pad2(bEndM)}。請問哪一班火車行駛的時間比較長？長多少分鐘？`,
+            options: shuffleArray([
+              ansStr,
+              `${loser}比較長，長 ${extraDiff} 分鐘`,
+              `${winner}比較長，長 ${extraDiff + 10} 分鐘`,
+              '兩班車行駛時間一樣長'
+            ]),
+            answer: ansStr,
+            method1: `【分別算出兩段時間間隔】甲火車行駛了 ${Math.floor(aDur / 60)} 小時 ${aDur % 60} 分（${aDur} 分）；乙火車行駛了 ${Math.floor(bDur / 60)} 小時 ${bDur % 60} 分（${bDur} 分）。`,
+            method2: `【比較差值】${Math.max(aDur, bDur)} 分鐘 － ${Math.min(aDur, bDur)} 分鐘 ＝ ${extraDiff} 分鐘，所以${ansStr}！`
+          };
+        }));
+      }
+
+      // 將整組題目順序也隨機打亂，讓每次挑戰節奏更豐富
+      return shuffleArray(questions);
+    }
+
+    // --- 3. 遊戲全局狀態與 LocalStorage 儲存管理 ---
+    const STORAGE_KEY_PLAYER = 'numsprite_time_player_v2';
+    const STORAGE_KEY_LB = 'numsprite_time_leaderboard_v2';
+
+    let playerState = {
+      name: '',
+      totalScore: 0,
+      maxCombo: 0,
+      clearedIslands: [], // 儲存已通關的 island.id
+      islandBestScores: {}, // 記錄每個島嶼最高分，避免重複刷分無限膨脹
+      unlockedGear: [], // 已解鎖的外觀道具 ID 陣列
+      equippedGear: [] // 目前穿戴中的外觀道具 ID 陣列
+    };
+
+    // 戰鬥即時狀態
+    let battleState = {
+      island: null,
+      questions: [],
+      currentIndex: 0,
+      heroHp: 100,
+      heroMaxHp: 100,
+      monsterHp: 100,
+      monsterMaxHp: 100,
+      sessionScore: 0,
+      sessionCorrect: 0,
+      combo: 0,
+      sessionMaxCombo: 0,
+      answered: false
+    };
+
+    // 初始化載入資料
+    function loadGameData() {
+      try {
+        const savedPlayer = localStorage.getItem(STORAGE_KEY_PLAYER);
+        if (savedPlayer) {
+          const parsed = JSON.parse(savedPlayer);
+          playerState = { ...playerState, ...parsed };
+          // 相容舊存檔：根據已通關島嶼自動補齊應解鎖的裝備
+          syncUnlockedGearFromCleared(false);
+        }
+      } catch (e) {
+        console.warn('讀取玩家資料失敗，使用預設狀態', e);
+      }
+
+      // 若已有玩家姓名，預填至歡迎畫面輸入框
+      if (playerState.name) {
+        document.getElementById('player-name-input').value = playerState.name;
+      }
+    }
+
+    // 確保已通關島嶼對應的裝備皆已解鎖
+    function syncUnlockedGearFromCleared(autoEquipNew = true) {
+      if (!Array.isArray(playerState.unlockedGear)) playerState.unlockedGear = [];
+      if (!Array.isArray(playerState.equippedGear)) playerState.equippedGear = [];
+
+      (playerState.clearedIslands || []).forEach(islandId => {
+        const island = ISLANDS.find(i => i.id === islandId);
+        if (island && island.rewardGearId) {
+          if (!playerState.unlockedGear.includes(island.rewardGearId)) {
+            playerState.unlockedGear.push(island.rewardGearId);
+            if (autoEquipNew && !playerState.equippedGear.includes(island.rewardGearId)) {
+              playerState.equippedGear.push(island.rewardGearId);
+            }
+          }
+        }
+      });
+    }
+
+    function saveGameData() {
+      try {
+        localStorage.setItem(STORAGE_KEY_PLAYER, JSON.stringify(playerState));
+        syncPlayerToLeaderboard();
+      } catch (e) {
+        console.warn('儲存玩家資料失敗', e);
+      }
+    }
+
+    // 切換玩家時載入或建立該姓名的獨立戰績紀錄
+    function switchOrCreatePlayerProfile(name) {
+      const cleanName = name.trim();
+      const lb = getLeaderboardList();
+      const existing = lb.find(item => item.name === cleanName);
+
+      if (existing) {
+        playerState = {
+          name: existing.name,
+          totalScore: existing.score || 0,
+          maxCombo: existing.maxCombo || 0,
+          clearedIslands: Array.isArray(existing.clearedIslands) ? [...existing.clearedIslands] : [],
+          islandBestScores: existing.islandBestScores ? { ...existing.islandBestScores } : {},
+          unlockedGear: Array.isArray(existing.unlockedGear) ? [...existing.unlockedGear] : [],
+          equippedGear: Array.isArray(existing.equippedGear) ? [...existing.equippedGear] : []
+        };
+        syncUnlockedGearFromCleared(true);
+      } else {
+        playerState = {
+          name: cleanName,
+          totalScore: 0,
+          maxCombo: 0,
+          clearedIslands: [],
+          islandBestScores: {},
+          unlockedGear: [],
+          equippedGear: []
+        };
+      }
+      saveGameData();
+    }
+
+    // 同步真實玩家最新成績至龍虎榜（依玩家姓名獨立記錄，同名則更新最高成績）
+    function syncPlayerToLeaderboard() {
+      const cleanName = (playerState.name || '').trim();
+      if (!cleanName) return;
+
+      const growth = getPlayerGrowthInfo(playerState);
+      let lb = getLeaderboardList();
+      const playerEntryIndex = lb.findIndex(item => item.name === cleanName);
+      const record = {
+        name: cleanName,
+        score: playerState.totalScore,
+        maxCombo: playerState.maxCombo,
+        clearedCount: playerState.clearedIslands.length,
+        clearedIslands: [...playerState.clearedIslands],
+        islandBestScores: { ...playerState.islandBestScores },
+        unlockedGear: [...(playerState.unlockedGear || [])],
+        equippedGear: [...(playerState.equippedGear || [])],
+        levelLabel: growth.fullLabel
+      };
+
+      if (playerEntryIndex >= 0) {
+        lb[playerEntryIndex] = record;
+      } else {
+        lb.push(record);
+      }
+
+      // 依總積分高至低排序，同分則比最高連擊
+      lb.sort((a, b) => (b.score - a.score) || (b.maxCombo - a.maxCombo));
+      localStorage.setItem(STORAGE_KEY_LB, JSON.stringify(lb));
+    }
+
+    function getLeaderboardList() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_LB);
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list)) return list;
+        }
+      } catch (e) {}
+      return [];
+    }
+
+    // --- 4. 畫面切換與 HUD 更新 ---
+    function showScreen(screenId) {
+      ['screen-welcome', 'screen-map', 'screen-battle'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(screenId).classList.remove('hidden');
+
+      const hud = document.getElementById('top-hud');
+      if (screenId === 'screen-welcome') {
+        hud.classList.add('hidden');
+      } else {
+        hud.classList.remove('hidden');
+        updateHUD();
+      }
+    }
+
+    function updateHUD() {
+      const growth = getPlayerGrowthInfo(playerState);
+      document.getElementById('hud-player-name').textContent = playerState.name || '小勇士';
+      document.getElementById('hud-level-badge').textContent = growth.fullLabel;
+      document.getElementById('hud-score').textContent = playerState.totalScore.toLocaleString();
+      document.getElementById('hud-max-combo').textContent = playerState.maxCombo;
+      document.getElementById('hud-cleared-count').textContent = playerState.clearedIslands.length;
+      document.getElementById('hud-gear-count').textContent = (playerState.unlockedGear || []).length;
+
+      // 同步更新頂部頭像的穿戴外觀
+      const hudAvatar = document.getElementById('hud-avatar-box');
+      if (hudAvatar) {
+        hudAvatar.innerHTML = renderCharacterSVG(playerState.equippedGear, 'hud');
+      }
+    }
+
+    // 切換穿戴 / 卸下已解鎖的外觀道具
+    function toggleEquipGear(gearId) {
+      SoundFX.click();
+      const gear = GEAR_ITEMS.find(g => g.id === gearId);
+      if (!gear) return;
+
+      if (!playerState.unlockedGear.includes(gearId)) {
+        const island = ISLANDS.find(i => i.id === gear.islandId);
+        showToast(`通關「${island ? island.name : '對應島嶼'}」即可解鎖「${gear.name}」！`, '🔒');
+        return;
+      }
+
+      const idx = playerState.equippedGear.indexOf(gearId);
+      if (idx >= 0) {
+        playerState.equippedGear.splice(idx, 1);
+        showToast(`已卸下「${gear.name}」`, '👕');
+      } else {
+        playerState.equippedGear.push(gearId);
+        showToast(`已穿戴「${gear.name}」！`, gear.icon);
+      }
+
+      saveGameData();
+      updateHUD();
+      renderGrowthShowcase();
+    }
+
+    // 渲染地圖畫面的「永光小伙子成長狀態與即時造型展示區」
+    function renderGrowthShowcase() {
+      const growth = getPlayerGrowthInfo(playerState);
+      const showcaseEl = document.getElementById('map-hero-showcase');
+      if (showcaseEl) {
+        showcaseEl.innerHTML = renderCharacterSVG(playerState.equippedGear, 'map_showcase');
+      }
+
+      document.getElementById('map-growth-level').textContent = growth.fullLabel;
+      document.getElementById('map-growth-next-hint').textContent = growth.nextHint;
+      document.getElementById('map-growth-bar').style.width = `${growth.progressPct}%`;
+      document.getElementById('map-gear-summary').textContent = `已解鎖外觀：${playerState.unlockedGear.length} / ${GEAR_ITEMS.length} 件`;
+
+      const slotsContainer = document.getElementById('map-gear-slots');
+      if (!slotsContainer) return;
+      slotsContainer.innerHTML = '';
+
+      GEAR_ITEMS.forEach(gear => {
+        const isUnlocked = playerState.unlockedGear.includes(gear.id);
+        const isEquipped = playerState.equippedGear.includes(gear.id);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => toggleEquipGear(gear.id);
+        btn.title = isUnlocked ? `${gear.name}（點擊切換穿戴/卸下）` : `尚未解鎖：${gear.name}`;
+
+        if (isUnlocked && isEquipped) {
+          btn.className = 'bg-white border-2 border-amber-400 rounded-xl p-1.5 text-center shadow-sm hover:scale-105 transition flex flex-col items-center justify-center relative';
+          btn.innerHTML = `
+            <span class="absolute -top-1.5 -right-1.5 bg-emerald-500 text-white text-[9px] font-black px-1 rounded-full">穿戴中</span>
+            <span class="text-xl sm:text-2xl leading-none">${gear.icon}</span>
+            <span class="text-[10px] font-black text-slate-800 truncate w-full mt-1">${gear.name}</span>
+          `;
+        } else if (isUnlocked) {
+          btn.className = 'bg-slate-50 border-2 border-slate-300 rounded-xl p-1.5 text-center opacity-80 hover:opacity-100 hover:border-sky-400 transition flex flex-col items-center justify-center relative';
+          btn.innerHTML = `
+            <span class="absolute -top-1.5 -right-1.5 bg-slate-400 text-white text-[9px] font-black px-1 rounded-full">已收起</span>
+            <span class="text-xl sm:text-2xl leading-none">${gear.icon}</span>
+            <span class="text-[10px] font-bold text-slate-600 truncate w-full mt-1">${gear.name}</span>
+          `;
+        } else {
+          btn.className = 'bg-slate-100/80 border-2 border-dashed border-slate-300 rounded-xl p-1.5 text-center opacity-65 hover:opacity-90 transition flex flex-col items-center justify-center';
+          btn.innerHTML = `
+            <span class="text-lg sm:text-xl leading-none grayscale">🔒</span>
+            <span class="text-[10px] font-bold text-slate-400 truncate w-full mt-1">${gear.slotLabel}</span>
+          `;
+        }
+
+        slotsContainer.appendChild(btn);
+      });
+    }
+
+    // 歡迎畫面點擊「開始時間冒險」
+    function startGameFromWelcome() {
+      SoundFX.click();
+      const input = document.getElementById('player-name-input');
+      const errMsg = document.getElementById('name-error-msg');
+      const nameVal = input.value.trim();
+
+      if (!nameVal) {
+        errMsg.classList.remove('hidden');
+        input.focus();
+        return;
+      }
+
+      errMsg.classList.add('hidden');
+      if (playerState.name !== nameVal) {
+        switchOrCreatePlayerProfile(nameVal);
+      } else {
+        saveGameData();
+      }
+      renderIslandMap();
+      showScreen('screen-map');
+      showToast(`歡迎永光小伙子「${nameVal}」來到時間冒險島！`, '🔥');
+    }
+
+    // 修改姓名彈窗控制
+    function openNameModal() {
+      SoundFX.click();
+      document.getElementById('edit-name-input').value = playerState.name;
+      document.getElementById('modal-edit-name').classList.remove('hidden');
+      setTimeout(() => document.getElementById('edit-name-input').focus(), 50);
+    }
+
+    function closeNameModal() {
+      document.getElementById('modal-edit-name').classList.add('hidden');
+    }
+
+    function saveEditedName() {
+      SoundFX.click();
+      const newName = document.getElementById('edit-name-input').value.trim();
+      if (!newName) {
+        showToast('玩家姓名不能為空白喔！', '⚠️');
+        return;
+      }
+      if (newName !== playerState.name) {
+        switchOrCreatePlayerProfile(newName);
+      }
+      document.getElementById('player-name-input').value = newName;
+      updateHUD();
+      renderIslandMap();
+      closeNameModal();
+      showToast(`已切換為勇士「${newName}」！`, '✅');
+    }
+
+    // --- 5. 島嶼地圖渲染 ---
+    function renderIslandMap() {
+      renderGrowthShowcase();
+      const container = document.getElementById('islands-container');
+      container.innerHTML = '';
+
+      ISLANDS.forEach((island) => {
+        const isCleared = playerState.clearedIslands.includes(island.id);
+        const bestScore = playerState.islandBestScores[island.id] || 0;
+        const rewardGear = GEAR_ITEMS.find(g => g.id === island.rewardGearId);
+
+        const card = document.createElement('div');
+        card.className = `relative rounded-2xl p-4 bg-white border-4 ${island.cardBorder} shadow-md hover:shadow-xl transition-all flex flex-col justify-between ${island.num === 5 ? 'md:col-span-2 bg-gradient-to-r from-amber-50 via-white to-orange-50' : ''}`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${island.bgGradient} border-2 border-white shadow flex items-center justify-center text-3xl shrink-0">
+                ${island.icon}
+              </div>
+              <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="text-xs font-black px-2.5 py-0.5 rounded-full ${island.badgeBg}">
+                    第 ${island.num} 島
+                  </span>
+                  ${isCleared
+                    ? '<span class="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-500 text-white">✅ 已通關</span>'
+                    : '<span class="text-xs font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚔️ 待挑戰</span>'
+                  }
+                  ${rewardGear ? `
+                    <span class="text-xs font-black px-2 py-0.5 rounded-full ${isCleared ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-600'}">
+                      ${rewardGear.icon} ${isCleared ? '已獲' : '獎勵'}：${rewardGear.name}
+                    </span>
+                  ` : ''}
+                </div>
+                <h3 class="text-lg sm:text-xl font-black text-slate-800 mt-1">${island.name}</h3>
+                <p class="text-xs sm:text-sm text-slate-500 font-bold">${island.subtitle}</p>
+              </div>
+            </div>
+
+            <div class="text-center shrink-0 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200">
+              <div class="text-2xl">${island.monsterEmoji}</div>
+              <div class="text-[10px] font-black text-slate-600 mt-0.5">${island.monsterName}</div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+            <div class="text-xs font-bold text-slate-500">
+              最高紀錄：<span class="text-amber-600 font-black">${bestScore} 分</span> • 共 ${island.questionCount} 題
+            </div>
+            <button onclick="startBattle('${island.id}')" class="btn-game bg-gradient-to-b from-sky-400 to-blue-600 hover:from-sky-300 hover:to-blue-500 text-white font-black px-4 py-2 rounded-xl text-xs sm:text-sm border border-blue-700 flex items-center gap-1.5">
+              <span>⚔️</span>
+              <span>${isCleared ? '再次挑戰' : '出發闖關'}</span>
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // 重置本機進度（無使用 confirm()，改用二次點擊確認機制）
+    let resetConfirmPending = false;
+    function resetProgressConfirm() {
+      SoundFX.click();
+      if (!resetConfirmPending) {
+        resetConfirmPending = true;
+        showToast('再按一次「重置本機進度」即可清空積分、等級與裝備紀錄', '⚠️');
+        setTimeout(() => { resetConfirmPending = false; }, 4000);
+        return;
+      }
+      resetConfirmPending = false;
+      playerState.totalScore = 0;
+      playerState.maxCombo = 0;
+      playerState.clearedIslands = [];
+      playerState.islandBestScores = {};
+      playerState.unlockedGear = [];
+      playerState.equippedGear = [];
+      saveGameData();
+      updateHUD();
+      renderIslandMap();
+      showToast('已重置本機遊戲進度與裝備！', '🔄');
+    }
+
+    // --- 6. RPG 戰鬥系統核心邏輯 ---
+    function startBattle(islandId) {
+      SoundFX.click();
+      const island = ISLANDS.find(i => i.id === islandId);
+      if (!island) return;
+
+      const qs = generateQuestionsForIsland(islandId);
+      battleState = {
+        island,
+        questions: qs,
+        currentIndex: 0,
+        heroHp: 100,
+        heroMaxHp: 100,
+        monsterHp: qs.length * 25,
+        monsterMaxHp: qs.length * 25,
+        sessionScore: 0,
+        sessionCorrect: 0,
+        combo: 0,
+        sessionMaxCombo: 0,
+        answered: false
+      };
+
+      // 設定戰鬥舞台外觀與穿戴裝備的小伙子角色
+      const stage = document.getElementById('battle-stage');
+      stage.className = `relative rounded-3xl overflow-hidden shadow-xl border-4 border-white min-h-[195px] sm:min-h-[225px] flex flex-col justify-between p-4 bg-gradient-to-b ${island.bgGradient}`;
+
+      const growth = getPlayerGrowthInfo(playerState);
+      document.getElementById('stage-bg-decor').innerHTML = island.decor.map(d => `<span>${d}</span>`).join('');
+      document.getElementById('battle-island-title').textContent = `${island.icon} ${island.name}`;
+      document.getElementById('battle-hero-name').textContent = `🔥 ${playerState.name} (${growth.title})`;
+      document.getElementById('hero-sprite').innerHTML = renderCharacterSVG(playerState.equippedGear, 'battle_hero');
+      document.getElementById('battle-monster-name').textContent = `${island.monsterEmoji} ${island.monsterName}`;
+      document.getElementById('monster-sprite').textContent = island.monsterEmoji;
+      document.getElementById('battle-q-total').textContent = qs.length;
+
+      updateBattleBars();
+      renderCurrentQuestion();
+      showScreen('screen-battle');
+    }
+
+    function exitBattleToMap() {
+      SoundFX.click();
+      renderIslandMap();
+      showScreen('screen-map');
+    }
+
+    function updateBattleBars() {
+      const heroPct = Math.max(0, Math.round((battleState.heroHp / battleState.heroMaxHp) * 100));
+      const monsterPct = Math.max(0, Math.round((battleState.monsterHp / battleState.monsterMaxHp) * 100));
+
+      document.getElementById('hero-hp-bar').style.width = `${heroPct}%`;
+      document.getElementById('hero-hp-text').textContent = `${Math.max(0, battleState.heroHp)}/${battleState.heroMaxHp}`;
+
+      document.getElementById('monster-hp-bar').style.width = `${monsterPct}%`;
+      document.getElementById('monster-hp-text').textContent = `${Math.max(0, battleState.monsterHp)}/${battleState.monsterMaxHp}`;
+
+      document.getElementById('battle-combo-count').textContent = battleState.combo;
+    }
+
+    function renderCurrentQuestion() {
+      const q = battleState.questions[battleState.currentIndex];
+      battleState.answered = false;
+
+      document.getElementById('battle-q-num').textContent = battleState.currentIndex + 1;
+      document.getElementById('question-tag').textContent = q.tag;
+      document.getElementById('question-text').textContent = q.text;
+      document.getElementById('feedback-panel').classList.add('hidden');
+
+      const grid = document.getElementById('options-grid');
+      grid.innerHTML = '';
+
+      const labels = ['A', 'B', 'C', 'D'];
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-game w-full text-left bg-white hover:bg-sky-50 border-3 border-2 border-slate-300 hover:border-sky-400 rounded-2xl p-3.5 sm:p-4 font-black text-base sm:text-lg text-slate-800 flex items-center gap-3 transition';
+        btn.innerHTML = `
+          <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-black shrink-0">${labels[idx]}</span>
+          <span class="flex-1">${opt}</span>
+        `;
+        btn.onclick = () => handleAnswerSelect(opt, btn);
+        grid.appendChild(btn);
+      });
+    }
+
+    // 觸發戰鬥動畫與飄字特效
+    function triggerCombatFX(isPlayerAttack, textStr, colorClass) {
+      const heroEl = document.getElementById('hero-sprite');
+      const monsterEl = document.getElementById('monster-sprite');
+      const fxLayer = document.getElementById('battle-fx-layer');
+
+      // 重置動畫 class
+      heroEl.classList.remove('anim-hero-attack', 'anim-hit');
+      monsterEl.classList.remove('anim-monster-attack', 'anim-hit');
+      void heroEl.offsetWidth; // 強制 reflow
+
+      if (isPlayerAttack) {
+        heroEl.classList.add('anim-hero-attack');
+        setTimeout(() => monsterEl.classList.add('anim-hit'), 160);
+      } else {
+        monsterEl.classList.add('anim-monster-attack');
+        setTimeout(() => heroEl.classList.add('anim-hit'), 160);
+      }
+
+      // 飄出傷害與連擊文字
+      const pop = document.createElement('div');
+      pop.className = `damage-popup font-black text-2xl sm:text-3xl drop-shadow ${colorClass}`;
+      pop.textContent = textStr;
+      fxLayer.appendChild(pop);
+      setTimeout(() => pop.remove(), 1000);
+    }
+
+    function handleAnswerSelect(selectedOption, clickedBtn) {
+      if (battleState.answered) return;
+      battleState.answered = true;
+
+      const q = battleState.questions[battleState.currentIndex];
+      const isCorrect = selectedOption === q.answer;
+      const allBtns = document.querySelectorAll('#options-grid button');
+
+      // 鎖定所有按鈕並標示正確與錯誤顏色
+      allBtns.forEach(btn => {
+        btn.disabled = true;
+        const btnText = btn.querySelector('span:last-child').textContent;
+        if (btnText === q.answer) {
+          btn.classList.remove('bg-white', 'border-slate-300');
+          btn.classList.add('bg-emerald-100', 'border-emerald-500', 'text-emerald-900');
+        } else if (btn === clickedBtn && !isCorrect) {
+          btn.classList.remove('bg-white', 'border-slate-300');
+          btn.classList.add('bg-rose-100', 'border-rose-500', 'text-rose-900');
+        }
+      });
+
+      const fbPanel = document.getElementById('feedback-panel');
+      const fbTitle = document.getElementById('feedback-title');
+      const expContent = document.getElementById('explanation-content');
+
+      if (isCorrect) {
+        SoundFX.correct();
+        battleState.combo += 1;
+        battleState.sessionCorrect += 1;
+        if (battleState.combo > battleState.sessionMaxCombo) {
+          battleState.sessionMaxCombo = battleState.combo;
+        }
+        if (battleState.combo > playerState.maxCombo) {
+          playerState.maxCombo = battleState.combo;
+        }
+
+        // 基礎 100 分 + 連擊加成
+        const comboBonus = (battleState.combo - 1) * 20;
+        const gained = 100 + comboBonus;
+        battleState.sessionScore += gained;
+        battleState.monsterHp = Math.max(0, battleState.monsterHp - 25);
+
+        triggerCombatFX(true, `💥 -25 HP (+${gained}分)`, 'text-amber-500');
+
+        fbPanel.className = 'mt-4 rounded-2xl p-4 border-2 bg-emerald-50/90 border-emerald-400';
+        fbTitle.className = 'font-black text-lg text-emerald-800 flex items-center gap-2';
+        fbTitle.innerHTML = `🎉 答對了！${battleState.combo >= 2 ? `🔥 ${battleState.combo} 連擊加成 (+${gained}分)` : `獲得 +${gained} 分`}`;
+      } else {
+        SoundFX.wrong();
+        battleState.combo = 0;
+        battleState.heroHp = Math.max(0, battleState.heroHp - 25);
+
+        triggerCombatFX(false, '💢 -25 HP', 'text-rose-600');
+
+        fbPanel.className = 'mt-4 rounded-2xl p-4 border-2 bg-rose-50/95 border-rose-400';
+        fbTitle.className = 'font-black text-lg text-rose-800 flex items-center gap-2';
+        fbTitle.innerHTML = `💥 哎呀答錯了！正確答案是「${q.answer}」`;
+      }
+
+      // 顯示雙重解題思路解析（仿照數靈精多方法並列特色）
+      expContent.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5 mt-2">
+          <div class="bg-white rounded-xl p-3 border border-sky-200 shadow-sm">
+            <div class="text-xs font-black text-sky-700 mb-1">💡 方法一：標準計算思路</div>
+            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">${q.method1}</p>
+          </div>
+          <div class="bg-white rounded-xl p-3 border border-amber-200 shadow-sm">
+            <div class="text-xs font-black text-amber-700 mb-1">✨ 方法二：生活巧算秘訣</div>
+            <p class="text-xs sm:text-sm text-slate-700 leading-relaxed">${q.method2}</p>
+          </div>
+        </div>
+      `;
+
+      // 若是最後一題或勇者血量歸零，按鈕文字改為查看結算
+      const nextBtn = document.getElementById('next-question-btn');
+      if (battleState.heroHp <= 0 || battleState.currentIndex >= battleState.questions.length - 1) {
+        nextBtn.textContent = '查看戰鬥結算 🏆';
+      } else {
+        nextBtn.textContent = '下一題 ➡️';
+      }
+
+      updateBattleBars();
+      fbPanel.classList.remove('hidden');
+    }
+
+    function nextQuestion() {
+      SoundFX.click();
+      // 檢查是否戰敗或完成所有題目
+      if (battleState.heroHp <= 0) {
+        finishBattle(false);
+        return;
+      }
+      if (battleState.currentIndex >= battleState.questions.length - 1) {
+        finishBattle(true);
+        return;
+      }
+
+      battleState.currentIndex += 1;
+      renderCurrentQuestion();
+    }
+
+    function finishBattle(isVictory) {
+      const islandId = battleState.island.id;
+      const prevBest = playerState.islandBestScores[islandId] || 0;
+      const rewardGearId = battleState.island.rewardGearId;
+      let unlockedRewardGear = null;
+      let isFirstTimeUnlock = false;
+
+      // 只要有得分就更新總積分（取該島嶼歷史最高分差額，或給予參與鼓勵分）
+      if (battleState.sessionScore > prevBest) {
+        const diff = battleState.sessionScore - prevBest;
+        playerState.totalScore += diff;
+        playerState.islandBestScores[islandId] = battleState.sessionScore;
+      } else if (battleState.sessionScore > 0) {
+        // 再次練習也有少量進步積分 (+30)
+        playerState.totalScore += 30;
+      }
+
+      if (isVictory) {
+        if (!playerState.clearedIslands.includes(islandId)) {
+          playerState.clearedIslands.push(islandId);
+        }
+        // 解鎖並自動穿戴本關專屬外觀道具
+        if (rewardGearId) {
+          unlockedRewardGear = GEAR_ITEMS.find(g => g.id === rewardGearId) || null;
+          if (!playerState.unlockedGear.includes(rewardGearId)) {
+            playerState.unlockedGear.push(rewardGearId);
+            isFirstTimeUnlock = true;
+          }
+          if (!playerState.equippedGear.includes(rewardGearId)) {
+            playerState.equippedGear.push(rewardGearId);
+          }
+        }
+      }
+
+      saveGameData();
+      updateHUD();
+
+      // 顯示結算彈窗與外觀道具獎勵框
+      const modal = document.getElementById('modal-result');
+      const rewardBox = document.getElementById('result-reward-box');
+
+      if (isVictory) {
+        SoundFX.victory();
+        document.getElementById('result-emoji').textContent = '🏆';
+        document.getElementById('result-title').textContent = `制霸「${battleState.island.name}」！`;
+        document.getElementById('result-subtitle').textContent = `永光小伙子成功擊敗 ${battleState.island.monsterName}，成績已登錄龍虎榜！`;
+
+        if (unlockedRewardGear) {
+          rewardBox.classList.remove('hidden');
+          document.getElementById('result-reward-header').textContent = isFirstTimeUnlock
+            ? '🎁 解鎖新外觀道具！已自動穿戴！'
+            : '✨ 本關專屬外觀已自動為小伙子穿戴！';
+          document.getElementById('result-reward-icon').textContent = unlockedRewardGear.icon;
+          document.getElementById('result-reward-name').textContent = unlockedRewardGear.name;
+          document.getElementById('result-reward-desc').textContent = unlockedRewardGear.desc;
+          document.getElementById('result-reward-preview').innerHTML = renderCharacterSVG(playerState.equippedGear, 'result_preview');
+        } else {
+          rewardBox.classList.add('hidden');
+        }
+      } else {
+        rewardBox.classList.add('hidden');
+        document.getElementById('result-emoji').textContent = '💪';
+        document.getElementById('result-title').textContent = '體力耗盡，差一點就贏了！';
+        document.getElementById('result-subtitle').textContent = '看看剛剛的解題思路，再挑戰一次一定能打敗牠！';
+      }
+
+      document.getElementById('result-score').textContent = `+${battleState.sessionScore}`;
+      document.getElementById('result-correct').textContent = `${battleState.sessionCorrect}/${battleState.questions.length}`;
+      document.getElementById('result-combo').textContent = `${battleState.sessionMaxCombo}🔥`;
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeResultAndReturnMap() {
+      SoundFX.click();
+      document.getElementById('modal-result').classList.add('hidden');
+      renderIslandMap();
+      showScreen('screen-map');
+    }
+
+    // --- 7. 解題提示彈窗 ---
+    function showHintModal() {
+      SoundFX.click();
+      const q = battleState.questions[battleState.currentIndex];
+      document.getElementById('hint-modal-body').innerHTML = `
+        <div class="bg-sky-50 rounded-2xl p-3.5 border border-sky-200">
+          <div class="font-black text-sky-800 mb-1">💡 思路一：拆解計算</div>
+          <p class="leading-relaxed">${q.method1}</p>
+        </div>
+        <div class="bg-amber-50 rounded-2xl p-3.5 border border-amber-200">
+          <div class="font-black text-amber-800 mb-1">✨ 思路二：巧算秘訣</div>
+          <p class="leading-relaxed">${q.method2}</p>
+        </div>
+      `;
+      document.getElementById('modal-hint').classList.remove('hidden');
+    }
+
+    function closeHintModal() {
+      SoundFX.click();
+      document.getElementById('modal-hint').classList.add('hidden');
+    }
+
+    // --- 8. 龍虎榜彈窗渲染 ---
+    function openLeaderboard() {
+      SoundFX.click();
+      syncPlayerToLeaderboard();
+      const list = getLeaderboardList();
+      const currentName = (playerState.name || '').trim();
+      const myGrowth = getPlayerGrowthInfo(playerState);
+
+      // 更新個人摘要列與頭像
+      document.getElementById('lb-my-avatar').innerHTML = renderCharacterSVG(playerState.equippedGear, 'lb_my');
+      document.getElementById('lb-my-level-badge').textContent = myGrowth.fullLabel;
+      document.getElementById('lb-my-name').textContent = currentName || '尚未輸入姓名';
+      document.getElementById('lb-my-score').textContent = playerState.totalScore.toLocaleString();
+      document.getElementById('lb-my-combo').textContent = `${playerState.maxCombo}🔥`;
+      document.getElementById('lb-my-islands').textContent = `${playerState.clearedIslands.length}/5`;
+
+      const tbody = document.getElementById('leaderboard-tbody');
+      tbody.innerHTML = '';
+
+      if (list.length === 0) {
+        const emptyTr = document.createElement('tr');
+        emptyTr.innerHTML = `
+          <td colspan="5" class="py-10 px-4 text-center">
+            <div class="text-4xl mb-2">🌟</div>
+            <div class="text-slate-700 font-black text-base mb-1">目前還沒有勇士上榜</div>
+            <div class="text-slate-500 font-bold text-xs sm:text-sm">快輸入姓名開始闖關，搶下第一名寶座吧！</div>
+          </td>
+        `;
+        tbody.appendChild(emptyTr);
+      } else {
+        list.forEach((row, index) => {
+          const rank = index + 1;
+          const isCurrentUser = currentName && row.name === currentName;
+          const rowGrowth = getPlayerGrowthInfo({
+            clearedIslands: row.clearedIslands || [],
+            totalScore: row.score || 0
+          });
+          const gearCount = Array.isArray(row.unlockedGear) ? row.unlockedGear.length : (row.clearedCount || 0);
+
+          let rankBadge = `<span class="text-slate-500 font-black">#${rank}</span>`;
+          if (rank === 1) rankBadge = '<span class="text-2xl" title="冠軍">🥇</span>';
+          else if (rank === 2) rankBadge = '<span class="text-2xl" title="亞軍">🥈</span>';
+          else if (rank === 3) rankBadge = '<span class="text-2xl" title="季軍">🥉</span>';
+
+          const tr = document.createElement('tr');
+          tr.className = isCurrentUser
+            ? 'bg-amber-50/90 text-amber-950 font-black'
+            : 'hover:bg-slate-50 text-slate-700';
+
+          tr.innerHTML = `
+            <td class="py-3 px-3 text-center">${rankBadge}</td>
+            <td class="py-3 px-3">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span>${isCurrentUser ? '🔥' : '🛡️'}</span>
+                <span>${row.name}</span>
+                <span class="text-[10px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded-full font-black">${row.levelLabel || rowGrowth.fullLabel}</span>
+                ${isCurrentUser ? '<span class="text-[10px] bg-amber-400 text-white px-1.5 py-0.5 rounded-full">我</span>' : ''}
+              </div>
+            </td>
+            <td class="py-3 px-3 text-right text-amber-600 font-black">${(row.score || 0).toLocaleString()}</td>
+            <td class="py-3 px-3 text-center text-rose-600">${row.maxCombo || 0}🔥</td>
+            <td class="py-3 px-3 text-center">
+              <div class="flex items-center justify-center gap-1 flex-wrap">
+                <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-black">
+                  ${row.clearedCount || 0}/5 島
+                </span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-black" title="已解鎖外觀裝備數">
+                  🎒${gearCount}/5
+                </span>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      document.getElementById('modal-leaderboard').classList.remove('hidden');
+    }
+
+    // 清空龍虎榜紀錄（二次點擊確認，無使用 confirm()）
+    let clearLbConfirmPending = false;
+    function clearLeaderboardConfirm() {
+      SoundFX.click();
+      if (!clearLbConfirmPending) {
+        clearLbConfirmPending = true;
+        showToast('再按一次「清空龍虎榜紀錄」即可清除所有上榜成績！', '⚠️');
+        setTimeout(() => { clearLbConfirmPending = false; }, 4000);
+        return;
+      }
+      clearLbConfirmPending = false;
+      localStorage.removeItem(STORAGE_KEY_LB);
+      localStorage.removeItem(STORAGE_KEY_PLAYER);
+      playerState = {
+        name: '',
+        totalScore: 0,
+        maxCombo: 0,
+        clearedIslands: [],
+        islandBestScores: {},
+        unlockedGear: [],
+        equippedGear: []
+      };
+      document.getElementById('player-name-input').value = '';
+      updateHUD();
+      renderIslandMap();
+      openLeaderboard();
+      showToast('已清空所有龍虎榜紀錄！', '🗑️');
+    }
+
+    function closeLeaderboard() {
+      SoundFX.click();
+      document.getElementById('modal-leaderboard').classList.add('hidden');
+    }
+
+    // --- 9. 自訂 Toast 提示 ---
+    let toastTimer = null;
+    function showToast(msg, icon = 'ℹ️') {
+      const box = document.getElementById('toast-box');
+      document.getElementById('toast-text').textContent = msg;
+      document.getElementById('toast-icon').textContent = icon;
+      box.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        box.classList.add('hidden');
+      }, 2800);
+    }
+
+    // 啟動初始化
+    window.addEventListener('DOMContentLoaded', () => {
+      loadGameData();
+      showScreen('screen-welcome');
+    });
+  </script>
+</body>
+</html>
